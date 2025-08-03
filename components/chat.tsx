@@ -22,6 +22,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
+import { AreaMap } from './area-map';
 
 export function Chat({
   id,
@@ -31,6 +32,7 @@ export function Chat({
   isReadonly,
   session,
   autoResume,
+  area,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -39,6 +41,12 @@ export function Chat({
   isReadonly: boolean;
   session: Session;
   autoResume: boolean;
+  area?: {
+    chatId: string;
+    name: string;
+    summary: string;
+    geojson: any;
+  } | null;
 }) {
   const { visibilityType } = useChatVisibility({
     chatId: id,
@@ -128,43 +136,51 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
-        <ChatHeader
-          chatId={id}
-          selectedModelId={initialChatModel}
-          selectedVisibilityType={initialVisibilityType}
-          isReadonly={isReadonly}
-          session={session}
-        />
+      <div className="flex h-dvh bg-background">
+        {/* Map Section - 2/3 of the screen */}
+        <div className="w-2/3 h-full">
+          <AreaMap chatId={id} area={area} />
+        </div>
 
-        <Messages
-          chatId={id}
-          status={status}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          regenerate={regenerate}
-          isReadonly={isReadonly}
-          isArtifactVisible={isArtifactVisible}
-        />
+        {/* Chat Section - 1/3 of the screen */}
+        <div className="w-1/3 flex flex-col min-w-0 h-full">
+          <ChatHeader
+            chatId={id}
+            selectedModelId={initialChatModel}
+            selectedVisibilityType={initialVisibilityType}
+            isReadonly={isReadonly}
+            session={session}
+          />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-          {!isReadonly && (
-            <MultimodalInput
-              chatId={id}
-              input={input}
-              setInput={setInput}
-              status={status}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              setMessages={setMessages}
-              sendMessage={sendMessage}
-              selectedVisibilityType={visibilityType}
-            />
-          )}
-        </form>
+          <Messages
+            chatId={id}
+            status={status}
+            votes={votes}
+            messages={messages}
+            setMessages={setMessages}
+            regenerate={regenerate}
+            isReadonly={isReadonly}
+            isArtifactVisible={isArtifactVisible}
+          />
+
+          <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full">
+            {!isReadonly && (
+              <MultimodalInput
+                chatId={id}
+                input={input}
+                setInput={setInput}
+                status={status}
+                stop={stop}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                messages={messages}
+                setMessages={setMessages}
+                sendMessage={sendMessage}
+                selectedVisibilityType={visibilityType}
+              />
+            )}
+          </form>
+        </div>
       </div>
 
       <Artifact

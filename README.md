@@ -33,6 +33,11 @@
   - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
 - [Auth.js](https://authjs.dev)
   - Simple and secure authentication
+- Real Estate Area Management
+  - Interactive maps using [Leaflet](https://leafletjs.com/) and [React Leaflet](https://react-leaflet.js.org/)
+  - Area-specific data storage with geolocation coordinates
+  - Editable area information with name, summary, and map positioning
+  - Default New York City area for new chats
 
 ## Model Providers
 
@@ -46,9 +51,31 @@ You can deploy your own version of the Next.js AI Chatbot to Vercel with one cli
 
 ## Running locally
 
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
+You will need to use the environment variables [defined in `env.example`](env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env.local` file is all that is necessary.
 
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+> Note: You should not commit your `.env.local` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+
+### Option 1: Using Docker (Recommended for local development)
+
+1. Copy the environment file:
+   ```bash
+   cp env.example .env.local
+   ```
+
+2. Start the Docker services (PostgreSQL and Redis):
+   ```bash
+   pnpm docker:up
+   ```
+
+3. Install dependencies and start development:
+   ```bash
+   pnpm install
+   pnpm dev:setup  # This will start Docker, run migrations, and initialize areas
+   ```
+
+4. Your app template should now be running on [localhost:3000](http://localhost:3000).
+
+### Option 2: Using Vercel CLI
 
 1. Install Vercel CLI: `npm i -g vercel`
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
@@ -59,4 +86,38 @@ pnpm install
 pnpm dev
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+### Docker Commands
+
+- `pnpm docker:up` - Start PostgreSQL and Redis containers
+- `pnpm docker:down` - Stop containers
+- `pnpm docker:logs` - View container logs
+- `pnpm docker:reset` - Reset containers and volumes (removes all data)
+- `pnpm dev:setup` - Complete setup (Docker + migrations + area initialization)
+
+## Real Estate Area Setup
+
+This application includes real estate area management functionality. Each chat is associated with a specific geographic area that includes:
+
+- **Interactive Map**: 2/3 of the chat screen displays an interactive map using Leaflet
+- **Area Information**: 1/3 of the screen shows the chat interface with area details
+- **Editable Area Data**: Users can edit area name, summary, coordinates, and zoom level
+- **Default Area**: New chats are initialized with New York City as the default area
+
+### Database Setup
+
+1. Run the database migration to create the area table:
+   ```bash
+   pnpm db:migrate
+   ```
+
+2. Initialize existing chats with default area data:
+   ```bash
+   pnpm db:init-areas
+   ```
+
+### Area Management
+
+- **View Area**: The map automatically displays the area associated with each chat
+- **Edit Area**: Click the "Edit" button in the area info panel to modify area details
+- **Update Coordinates**: Change latitude, longitude, and zoom level to focus on different areas
+- **Area Summary**: Provide detailed descriptions of the real estate area for context

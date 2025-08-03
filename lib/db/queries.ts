@@ -27,6 +27,8 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  area,
+  type Area,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -100,6 +102,7 @@ export async function saveChat({
       visibility,
     });
   } catch (error) {
+    console.error(error);
     throw new ChatSDKError('bad_request:database', 'Failed to save chat');
   }
 }
@@ -534,5 +537,75 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
       'bad_request:database',
       'Failed to get stream ids by chat id',
     );
+  }
+}
+
+export async function getAreaByChatId({ chatId }: { chatId: string }) {
+  try {
+    const [selectedArea] = await db
+      .select()
+      .from(area)
+      .where(eq(area.chatId, chatId));
+    return selectedArea;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get area by chat ID',
+    );
+  }
+}
+
+export async function createArea({
+  chatId,
+  name,
+  summary,
+  geojson,
+}: {
+  chatId: string;
+  name: string;
+  summary: string;
+  geojson: any;
+}) {
+  try {
+    return await db
+      .insert(area)
+      .values({
+        chatId,
+        name,
+        summary,
+        geojson,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to create area');
+  }
+}
+
+export async function updateArea({
+  chatId,
+  name,
+  summary,
+  geojson,
+}: {
+  chatId: string;
+  name: string;
+  summary: string;
+  geojson: any;
+}) {
+  try {
+    return await db
+      .update(area)
+      .set({
+        name,
+        summary,
+        geojson,
+        updatedAt: new Date(),
+      })
+      .where(eq(area.chatId, chatId))
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to update area');
   }
 }

@@ -9,6 +9,7 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  decimal,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -168,3 +169,46 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const area = pgTable('Area', {
+  chatId: uuid('chatId')
+    .primaryKey()
+    .notNull()
+    .references(() => chat.id),
+  name: varchar('name', { length: 255 }).notNull(),
+  summary: text('summary').notNull(),
+  geojson: json('geojson').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Area = InferSelectModel<typeof area>;
+
+// GeoJSON types for area data
+export interface GeoJSONPoint {
+  type: 'Point';
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export interface GeoJSONPolygon {
+  type: 'Polygon';
+  coordinates: number[][][]; // Array of linear rings
+}
+
+export interface GeoJSONMultiPolygon {
+  type: 'MultiPolygon';
+  coordinates: number[][][][]; // Array of polygons
+}
+
+export interface GeoJSONFeature {
+  type: 'Feature';
+  geometry: GeoJSONPoint | GeoJSONPolygon | GeoJSONMultiPolygon;
+  properties?: Record<string, any>;
+}
+
+export interface GeoJSONFeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJSONFeature[];
+}
+
+export type GeoJSON = GeoJSONPoint | GeoJSONPolygon | GeoJSONMultiPolygon | GeoJSONFeature | GeoJSONFeatureCollection;

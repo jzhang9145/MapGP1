@@ -1,23 +1,23 @@
 # NYC Neighborhoods Tool
 
 ## Overview
-The `nycNeighborhoods` tool allows the AI agent to fetch NYC neighborhood data from the NY Open Data portal. It uses the NYC Trees dataset to calculate neighborhood centers by averaging the locations of all trees within each neighborhood. Note: This approach provides calculated centers rather than full polygon boundaries.
+The `nycNeighborhoods` tool allows the AI agent to fetch NYC neighborhood data from the NY Open Data portal. It uses the official NYC Neighborhood Tabulation Areas 2020 dataset to provide complete polygon boundaries for each neighborhood. This provides accurate neighborhood boundaries for mapping and area calculations.
 
 ## Features
 
 ### ✅ **Data Sources**
 - **NY Open Data Portal**: Official NYC government data
-- **NYC Trees Dataset**: Individual tree locations within neighborhoods
-- **Calculated Centers**: Neighborhood centers calculated from tree location averages
-- **Tree Count Data**: Number of trees per neighborhood for context
+- **NYC Neighborhood Tabulation Areas 2020**: Official neighborhood boundaries with polygon data
+- **Complete Polygons**: Full polygon boundaries for accurate mapping
+- **Official NTA Codes**: Standardized neighborhood identification codes
 
 ### 🔧 **Key Capabilities**
 - **Borough Filtering**: Filter by specific borough or get all NYC
 - **Multiple Formats**: Full GeoJSON or summary information
 - **Configurable Limits**: Control the number of neighborhoods returned
 - **Real-time Data**: Direct access to NY Open Data API
-- **Calculated Centers**: Neighborhood centers calculated from tree location averages
-- **Tree Count Information**: Shows number of trees used for center calculation
+- **Complete Polygons**: Full polygon boundaries for accurate mapping
+- **Official Boundaries**: Uses official NYC Neighborhood Tabulation Areas
 
 ## Usage Examples
 
@@ -63,17 +63,17 @@ None (all parameters are optional with defaults)
 {
   "success": true,
   "source": "NY Open Data",
-  "dataset": "NYC Trees Dataset (Calculated Centers)",
+  "dataset": "NYC Neighborhood Tabulation Areas 2020",
   "borough": "All",
-  "totalFeatures": 124,
-  "dataType": "Calculated centers from tree locations",
-  "note": "This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.",
+  "totalFeatures": 195,
+  "dataType": "Official polygon boundaries from NYC Neighborhood Tabulation Areas",
+  "note": "This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.",
   "geojson": {
     "type": "FeatureCollection",
     "features": [...]
   },
   "summary": {
-    "neighborhoods": ["Forest Hills", "Astoria", ...],
+    "neighborhoods": ["Greenpoint", "Williamsburg", ...],
     "boroughs": ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
   }
 }
@@ -84,11 +84,11 @@ None (all parameters are optional with defaults)
 {
   "success": true,
   "source": "NY Open Data",
-  "dataset": "NYC Trees Dataset (Calculated Centers)",
+  "dataset": "NYC Neighborhood Tabulation Areas 2020",
   "borough": "Manhattan",
   "totalNeighborhoods": 12,
-  "dataType": "Calculated centers from tree locations",
-  "note": "This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.",
+  "dataType": "Official polygon boundaries from NYC Neighborhood Tabulation Areas",
+  "note": "This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.",
   "boroughCounts": {
     "Manhattan": 12
   },
@@ -97,9 +97,16 @@ None (all parameters are optional with defaults)
       "name": "Upper East Side",
       "borough": "Manhattan",
       "nta_code": "MN31",
-      "treeCount": 45,
-      "latitude": 40.7629,
-      "longitude": -73.9654
+      "nta_2020": "MN31",
+      "cdtca": "108",
+      "cdtca_name": "Manhattan Community District 8",
+      "center": {
+        "latitude": 40.7629,
+        "longitude": -73.9654
+      },
+      "hasPolygon": true,
+      "shape_area": "35321809.1041",
+      "shape_leng": "28919.5608108"
     }
   ]
 }
@@ -138,23 +145,25 @@ None (all parameters are optional with defaults)
 
 ## Data Details
 
-### Calculated Neighborhood Centers
+### Official NYC Neighborhood Boundaries
 - **Official NYC neighborhoods** as defined by the city
-- **Calculated centers** based on tree location averages
-- **Tree count data** for each neighborhood
-- **Official names** and NTA codes
-- **Note**: Centers are calculated from tree locations, not official boundaries
+- **Complete polygon boundaries** for accurate mapping
+- **Official NTA codes** and community district information
+- **Official names** and standardized identifiers
+- **Shape area and length** data for each neighborhood
+- **Note**: Uses official NYC Neighborhood Tabulation Areas 2020 boundaries
 
 ### Data Fields
 - `name`: Neighborhood name
 - `borough`: Borough name
 - `nta_code`: Neighborhood Tabulation Area code
-- `zipcode`: ZIP code (when available)
-- `zip_city`: City name for ZIP code (when available)
-- `latitude`: Calculated center latitude (average of tree locations)
-- `longitude`: Calculated center longitude (average of tree locations)
-- `treeCount`: Number of trees used to calculate the center
-- `geometry`: GeoJSON geometry for mapping (Point)
+- `nta_2020`: NTA code for 2020 boundaries
+- `cdtca`: Community District Tabulation Area code
+- `cdtca_name`: Community District name
+- `center`: Calculated center point from polygon
+- `geometry`: GeoJSON polygon geometry for mapping
+- `shape_area`: Area of the neighborhood polygon
+- `shape_leng`: Length of the neighborhood polygon boundary
 
 ## Examples
 
@@ -212,8 +221,9 @@ The GeoJSON data returned by this tool can be directly used with:
 - **Update Frequency**: Regular updates from NYC government
 
 ### Alternative Datasets
-- **NTA (Neighborhood Tabulation Areas)**: cpf4-rkhq
 - **Neighborhood Names**: xyye-rtrs
+- **NYC Trees Dataset**: uvpi-gqnh (for tree locations)
+- **NYC Neighborhood Tabulation Areas 2020**: 9nt8-h7nd (official boundaries)
 
 ## Use Cases
 

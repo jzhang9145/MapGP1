@@ -22,7 +22,7 @@ export const NYCNeighborhoodsTool = ({
           <div className="size-4 rounded-full bg-blue-200 animate-pulse" />
           <div className="text-blue-600 text-sm">
             Fetching NYC neighborhoods...
-            {input?.borough !== 'All' && ` for ${input.borough}`}
+            {input?.borough !== 'All' && ` for ${input?.borough}`}
             {input?.format === 'summary' && ' (summary format)'}
           </div>
         </div>

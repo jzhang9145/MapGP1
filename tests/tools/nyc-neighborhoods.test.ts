@@ -16,8 +16,11 @@ describe('nycNeighborhoods Tool', () => {
         });
 
         expect(result).toHaveProperty('success', true);
-        expect(result).toHaveProperty('source', 'NY Open Data');
-        expect(result).toHaveProperty('dataset', 'Community Districts');
+        expect(result).toHaveProperty('source', 'NY Open Data (Cached)');
+        expect(result).toHaveProperty(
+          'dataset',
+          'NYC Neighborhood Tabulation Areas 2020',
+        );
         expect(result).toHaveProperty('borough', 'All');
         expect(result).toHaveProperty('totalFeatures');
         expect(result).toHaveProperty('geojson');
@@ -64,7 +67,7 @@ describe('nycNeighborhoods Tool', () => {
           const firstNeighborhood = neighborhoods[0];
           expect(firstNeighborhood).toHaveProperty('name');
           expect(firstNeighborhood).toHaveProperty('borough');
-          expect(firstNeighborhood).toHaveProperty('cd');
+          expect(firstNeighborhood).toHaveProperty('nta_code');
         }
       },
       TIMEOUT,
@@ -92,7 +95,7 @@ describe('nycNeighborhoods Tool', () => {
           expect(neighborhood.borough).toBe('Manhattan');
         });
 
-        // Manhattan should have around 12 community districts
+        // Manhattan should have around 12 NTAs
         expect(neighborhoods.length).toBeLessThanOrEqual(12);
       },
       TIMEOUT,
@@ -118,7 +121,7 @@ describe('nycNeighborhoods Tool', () => {
           expect(neighborhood.borough).toBe('Brooklyn');
         });
 
-        // Brooklyn should have around 18 community districts
+        // Brooklyn should have around 18 NTAs
         expect(neighborhoods.length).toBeLessThanOrEqual(18);
       },
       TIMEOUT,
@@ -144,7 +147,7 @@ describe('nycNeighborhoods Tool', () => {
           expect(neighborhood.borough).toBe('Queens');
         });
 
-        // Queens should have around 14 community districts
+        // Queens should have around 14 NTAs
         expect(neighborhoods.length).toBeLessThanOrEqual(14);
       },
       TIMEOUT,
@@ -182,8 +185,8 @@ describe('nycNeighborhoods Tool', () => {
         expect(result).toHaveProperty('success', true);
         const neighborhoods = (result as any).neighborhoods;
         expect(Array.isArray(neighborhoods)).toBe(true);
-        // Should return all available neighborhoods (around 59)
-        expect(neighborhoods.length).toBeGreaterThan(50);
+        // Should return all available neighborhoods (around 195 NTAs)
+        expect(neighborhoods.length).toBeGreaterThan(150);
       },
       TIMEOUT,
     );
@@ -217,7 +220,7 @@ describe('nycNeighborhoods Tool', () => {
           const properties = feature.properties;
           expect(properties).toHaveProperty('name');
           expect(properties).toHaveProperty('borough');
-          expect(properties).toHaveProperty('cd');
+          expect(properties).toHaveProperty('nta_code');
           expect(properties.borough).toBe('Manhattan');
         }
       },
@@ -316,8 +319,8 @@ describe('nycNeighborhoods Tool', () => {
           expect(neighborhood.name).toBeDefined();
           expect(typeof neighborhood.name).toBe('string');
           expect(neighborhood.name.length).toBeGreaterThan(0);
-          expect(neighborhood.cd).toBeDefined();
-          expect(typeof neighborhood.cd).toBe('string');
+          expect(neighborhood.nta_code).toBeDefined();
+          expect(typeof neighborhood.nta_code).toBe('string');
         });
       },
       TIMEOUT,

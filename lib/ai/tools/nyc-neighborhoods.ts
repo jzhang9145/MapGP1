@@ -10,17 +10,24 @@ interface NeighborhoodData {
   name: string;
   borough: string;
   nta_code: string;
-  zipcode?: string;
-  zip_city?: string;
-  latitude: number;
-  longitude: number;
-  treeCount: number;
+  nta_name: string;
+  nta_2020: string;
+  cdtca: string;
+  cdtca_name: string;
+  geometry: any; // GeoJSON polygon geometry
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  shape_area?: string;
+  shape_leng?: string;
 }
 
 async function fetchAndProcessNYCData(): Promise<NeighborhoodData[]> {
   try {
     const baseUrl = 'https://data.cityofnewyork.us/resource/';
-    const selectedDataset = 'uvpi-gqnh.json';
+    // Use the official NYC Neighborhood Tabulation Areas 2020 dataset
+    const selectedDataset = '9nt8-h7nd.json';
     const url = `${baseUrl}${selectedDataset}`;
 
     const response = await fetch(url, {
@@ -36,55 +43,48 @@ async function fetchAndProcessNYCData(): Promise<NeighborhoodData[]> {
 
     const data = await response.json();
 
-    // Group by neighborhood and calculate proper centers
-    const neighborhoodGroups = data.reduce((acc: any, item: any) => {
-      const key = item.nta_name;
-      if (!acc[key]) {
-        acc[key] = {
-          name: item.nta_name,
-          borough: item.boroname,
-          nta_code: item.nta,
-          zipcode: item.zipcode,
-          zip_city: item.zip_city,
-          trees: [],
-          latitude: Number.parseFloat(item.latitude || 0),
-          longitude: Number.parseFloat(item.longitude || 0),
-        };
-      }
-      acc[key].trees.push({
-        latitude: Number.parseFloat(item.latitude || 0),
-        longitude: Number.parseFloat(item.longitude || 0),
-      });
-      return acc;
-    }, {});
-
-    // Calculate proper centers for each neighborhood
-    const neighborhoods = Object.values(neighborhoodGroups).map(
-      (neighborhood: any) => {
-        if (neighborhood.trees.length > 0) {
-          const avgLat =
-            neighborhood.trees.reduce(
-              (sum: number, tree: any) => sum + tree.latitude,
-              0,
-            ) / neighborhood.trees.length;
-          const avgLng =
-            neighborhood.trees.reduce(
-              (sum: number, tree: any) => sum + tree.longitude,
-              0,
-            ) / neighborhood.trees.length;
-          return {
-            ...neighborhood,
-            latitude: avgLat,
-            longitude: avgLng,
-            treeCount: neighborhood.trees.length,
-          };
+    // Process the official NTA data with polygon geometries
+    const neighborhoods = data.map((item: any) => {
+      // Parse the geometry if it's a string
+      let geometry = null;
+      if (item.the_geom) {
+        try {
+          geometry =
+            typeof item.the_geom === 'string'
+              ? JSON.parse(item.the_geom)
+              : item.the_geom;
+        } catch (e) {
+          console.warn('Failed to parse geometry for', item.ntaname);
         }
-        return {
-          ...neighborhood,
-          treeCount: 0,
-        };
-      },
-    );
+      }
+
+      // Calculate center from polygon if geometry is available
+      let center = { latitude: 0, longitude: 0 };
+      if (geometry?.coordinates?.[0]?.[0]) {
+        const coords = geometry.coordinates[0][0]; // First ring of first polygon
+        const avgLat =
+          coords.reduce((sum: number, coord: number[]) => sum + coord[1], 0) /
+          coords.length;
+        const avgLng =
+          coords.reduce((sum: number, coord: number[]) => sum + coord[0], 0) /
+          coords.length;
+        center = { latitude: avgLat, longitude: avgLng };
+      }
+
+      return {
+        name: item.ntaname,
+        borough: item.boroname,
+        nta_code: item.nta2020,
+        nta_name: item.ntaname,
+        nta_2020: item.nta2020,
+        cdtca: item.cdta2020,
+        cdtca_name: item.cdtaname,
+        geometry: geometry,
+        center: center,
+        shape_area: item.shape_area,
+        shape_leng: item.shape_leng,
+      };
+    });
 
     return neighborhoods;
   } catch (error) {
@@ -95,7 +95,7 @@ async function fetchAndProcessNYCData(): Promise<NeighborhoodData[]> {
 
 export const nycNeighborhoods = tool({
   description:
-    'Fetch NYC neighborhood data with calculated centers from tree locations. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Data is cached for 24 hours for improved performance.',
+    'Fetch NYC neighborhood data with official polygon boundaries from the NYC Neighborhood Tabulation Areas 2020 dataset. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Data includes complete polygon geometries for accurate mapping and area calculations. Data is cached for 24 hours for improved performance.',
   inputSchema: z.object({
     borough: z
       .enum([
@@ -173,7 +173,7 @@ export const nycNeighborhoods = tool({
         return {
           success: true,
           source: 'NY Open Data (Cached)',
-          dataset: 'NYC Trees Dataset (Calculated Centers)',
+          dataset: 'NYC Neighborhood Tabulation Areas 2020',
           borough,
           neighborhood: neighborhood || null,
           totalNeighborhoods: limitedData.length,
@@ -182,36 +182,41 @@ export const nycNeighborhoods = tool({
             name: item.name,
             borough: item.borough,
             nta_code: item.nta_code,
-            zipcode: item.zipcode,
-            zip_city: item.zip_city,
-            latitude: item.latitude,
-            longitude: item.longitude,
-            treeCount: item.treeCount,
+            nta_2020: item.nta_2020,
+            cdtca: item.cdtca,
+            cdtca_name: item.cdtca_name,
+            center: item.center,
+            hasPolygon: !!item.geometry,
+            shape_area: item.shape_area,
+            shape_leng: item.shape_leng,
           })),
-          dataType: 'Calculated centers from tree locations',
-          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. Data is cached for 24 hours.',
+          dataType:
+            'Official polygon boundaries from NYC Neighborhood Tabulation Areas',
+          note: 'This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.',
           cacheInfo: {
             lastUpdated: new Date(lastFetchTime).toISOString(),
             cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes
           },
         };
       } else {
-        // Return GeoJSON format
+        // Return GeoJSON format with polygon geometries
         const features = limitedData.map((item: any) => ({
           type: 'Feature',
           properties: {
             name: item.name,
             borough: item.borough,
             nta_code: item.nta_code,
-            zipcode: item.zipcode,
-            zip_city: item.zip_city,
-            latitude: item.latitude,
-            longitude: item.longitude,
-            treeCount: item.treeCount,
+            nta_2020: item.nta_2020,
+            cdtca: item.cdtca,
+            cdtca_name: item.cdtca_name,
+            center_lat: item.center.latitude,
+            center_lng: item.center.longitude,
+            shape_area: item.shape_area,
+            shape_leng: item.shape_leng,
           },
-          geometry: {
+          geometry: item.geometry || {
             type: 'Point',
-            coordinates: [item.longitude, item.latitude],
+            coordinates: [item.center.longitude, item.center.latitude],
           },
         }));
 
@@ -223,13 +228,14 @@ export const nycNeighborhoods = tool({
         return {
           success: true,
           source: 'NY Open Data (Cached)',
-          dataset: 'NYC Trees Dataset (Calculated Centers)',
+          dataset: 'NYC Neighborhood Tabulation Areas 2020',
           borough,
           neighborhood: neighborhood || null,
           totalFeatures: geojson.features.length,
           geojson,
-          dataType: 'Calculated centers from tree locations',
-          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. Data is cached for 24 hours.',
+          dataType:
+            'Official polygon boundaries from NYC Neighborhood Tabulation Areas',
+          note: 'This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.',
           cacheInfo: {
             lastUpdated: new Date(lastFetchTime).toISOString(),
             cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes

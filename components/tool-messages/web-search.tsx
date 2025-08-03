@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpIcon } from './icons';
+import { ArrowUpIcon } from '../icons';
 
 interface WebSearchResult {
   title: string;
@@ -67,7 +67,7 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
       <div className="flex flex-col gap-3">
         {webSearchData.results.map((result, index) => (
           <div
-            key={index}
+            key={`${result.link}-${index}`}
             className="flex flex-col gap-1 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-200 transition-colors"
           >
             <a
@@ -88,4 +88,4 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
       </div>
     </div>
   );
-}
+} 

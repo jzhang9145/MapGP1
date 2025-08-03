@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const nycNeighborhoods = tool({
   description:
-    'Fetch NYC neighborhood data. This tool can retrieve neighborhood information for New York City by borough or search for specific neighborhoods by name.',
+    'Fetch NYC neighborhood data with calculated centers from tree locations. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Note: Currently uses tree location data to calculate neighborhood centers as polygon boundaries are not available in the current dataset.',
   inputSchema: z.object({
     borough: z
       .enum([
@@ -45,6 +45,7 @@ export const nycNeighborhoods = tool({
       const baseUrl = 'https://data.cityofnewyork.us/resource/';
 
       // Use the NYC Trees dataset which contains neighborhood information
+      // Note: This dataset contains individual tree locations, not polygon boundaries
       const selectedDataset = 'uvpi-gqnh.json';
       const url = `${baseUrl}${selectedDataset}`;
 
@@ -79,25 +80,67 @@ export const nycNeighborhoods = tool({
         );
       }
 
+      // Group by neighborhood and calculate proper centers
+      const neighborhoodGroups = filteredData.reduce((acc: any, item: any) => {
+        const key = item.nta_name;
+        if (!acc[key]) {
+          acc[key] = {
+            name: item.nta_name,
+            borough: item.boroname,
+            nta_code: item.nta,
+            zipcode: item.zipcode,
+            zip_city: item.zip_city,
+            trees: [],
+            latitude: Number.parseFloat(item.latitude || 0),
+            longitude: Number.parseFloat(item.longitude || 0),
+          };
+        }
+        acc[key].trees.push({
+          latitude: Number.parseFloat(item.latitude || 0),
+          longitude: Number.parseFloat(item.longitude || 0),
+        });
+        return acc;
+      }, {});
+
+      // Calculate proper centers for each neighborhood
+      const neighborhoods = Object.values(neighborhoodGroups).map(
+        (neighborhood: any) => {
+          if (neighborhood.trees.length > 0) {
+            const avgLat =
+              neighborhood.trees.reduce(
+                (sum: number, tree: any) => sum + tree.latitude,
+                0,
+              ) / neighborhood.trees.length;
+            const avgLng =
+              neighborhood.trees.reduce(
+                (sum: number, tree: any) => sum + tree.longitude,
+                0,
+              ) / neighborhood.trees.length;
+            return {
+              ...neighborhood,
+              latitude: avgLat,
+              longitude: avgLng,
+              treeCount: neighborhood.trees.length,
+            };
+          }
+          return neighborhood;
+        },
+      );
+
       if (format === 'summary') {
         // Return summary information
-        const neighborhoods = filteredData.map((item: any) => ({
-          name: item.nta_name || 'Unknown Neighborhood',
-          borough: item.boroname || 'Unknown Borough',
-          nta_code: item.nta || 'Unknown NTA',
+        const summaryNeighborhoods = neighborhoods.map((item: any) => ({
+          name: item.name || 'Unknown Neighborhood',
+          borough: item.borough || 'Unknown Borough',
+          nta_code: item.nta_code || 'Unknown NTA',
           zipcode: item.zipcode,
           zip_city: item.zip_city,
           latitude: item.latitude,
           longitude: item.longitude,
+          treeCount: item.treeCount || 0,
         }));
 
-        // Remove duplicates based on nta_name
-        const uniqueNeighborhoods = neighborhoods.filter(
-          (item: any, index: number, self: any[]) =>
-            index === self.findIndex((t: any) => t.name === item.name),
-        );
-
-        const boroughCounts = uniqueNeighborhoods.reduce(
+        const boroughCounts = summaryNeighborhoods.reduce(
           (acc: any, item: any) => {
             acc[item.borough] = (acc[item.borough] || 0) + 1;
             return acc;
@@ -108,57 +151,50 @@ export const nycNeighborhoods = tool({
         return {
           success: true,
           source: 'NY Open Data',
-          dataset: 'NYC Trees with Neighborhood Data',
+          dataset: 'NYC Trees Dataset (Calculated Centers)',
           borough,
           neighborhood: neighborhood || null,
-          totalNeighborhoods: uniqueNeighborhoods.length,
+          totalNeighborhoods: summaryNeighborhoods.length,
           boroughCounts,
-          neighborhoods: uniqueNeighborhoods.slice(0, limit),
+          neighborhoods: summaryNeighborhoods.slice(0, limit),
+          dataType: 'Calculated centers from tree locations',
+          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.',
         };
       } else {
         // Return GeoJSON format
-        const features = filteredData.map((item: any) => ({
+        const features = neighborhoods.map((item: any) => ({
           type: 'Feature',
           properties: {
-            name: item.nta_name || 'Unknown Neighborhood',
-            borough: item.boroname || 'Unknown Borough',
-            nta_code: item.nta || 'Unknown NTA',
+            name: item.name || 'Unknown Neighborhood',
+            borough: item.borough || 'Unknown Borough',
+            nta_code: item.nta_code || 'Unknown NTA',
             zipcode: item.zipcode,
             zip_city: item.zip_city,
             latitude: item.latitude,
             longitude: item.longitude,
+            treeCount: item.treeCount || 0,
           },
           geometry: {
             type: 'Point',
-            coordinates: [
-              Number.parseFloat(item.longitude || 0),
-              Number.parseFloat(item.latitude || 0),
-            ],
+            coordinates: [item.longitude, item.latitude],
           },
         }));
 
-        // Remove duplicates based on nta_name
-        const uniqueFeatures = features.filter(
-          (item: any, index: number, self: any[]) =>
-            index ===
-            self.findIndex(
-              (t: any) => t.properties.name === item.properties.name,
-            ),
-        );
-
         const geojson = {
           type: 'FeatureCollection',
-          features: uniqueFeatures.filter((f: any) => f.geometry !== null),
+          features: features.filter((f: any) => f.geometry !== null),
         };
 
         return {
           success: true,
           source: 'NY Open Data',
-          dataset: 'NYC Trees with Neighborhood Data',
+          dataset: 'NYC Trees Dataset (Calculated Centers)',
           borough,
           neighborhood: neighborhood || null,
           totalFeatures: geojson.features.length,
           geojson,
+          dataType: 'Calculated centers from tree locations',
+          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.',
           summary: {
             neighborhoods: geojson.features.map((f: any) => f.properties.name),
             boroughs: [

@@ -1,20 +1,23 @@
 # NYC Neighborhoods Tool
 
 ## Overview
-The `nycNeighborhoods` tool allows the AI agent to fetch NYC neighborhood GeoJSON data from the NY Open Data portal. It provides access to official NYC neighborhood boundaries and information.
+The `nycNeighborhoods` tool allows the AI agent to fetch NYC neighborhood data from the NY Open Data portal. It uses the NYC Trees dataset to calculate neighborhood centers by averaging the locations of all trees within each neighborhood. Note: This approach provides calculated centers rather than full polygon boundaries.
 
 ## Features
 
 ### ✅ **Data Sources**
 - **NY Open Data Portal**: Official NYC government data
-- **Community Districts**: Official NYC neighborhood boundaries
-- **Multiple Datasets**: Community Districts, NTA, and neighborhood names
+- **NYC Trees Dataset**: Individual tree locations within neighborhoods
+- **Calculated Centers**: Neighborhood centers calculated from tree location averages
+- **Tree Count Data**: Number of trees per neighborhood for context
 
 ### 🔧 **Key Capabilities**
 - **Borough Filtering**: Filter by specific borough or get all NYC
 - **Multiple Formats**: Full GeoJSON or summary information
 - **Configurable Limits**: Control the number of neighborhoods returned
 - **Real-time Data**: Direct access to NY Open Data API
+- **Calculated Centers**: Neighborhood centers calculated from tree location averages
+- **Tree Count Information**: Shows number of trees used for center calculation
 
 ## Usage Examples
 
@@ -60,15 +63,17 @@ None (all parameters are optional with defaults)
 {
   "success": true,
   "source": "NY Open Data",
-  "dataset": "Community Districts",
+  "dataset": "NYC Trees Dataset (Calculated Centers)",
   "borough": "All",
-  "totalFeatures": 59,
+  "totalFeatures": 124,
+  "dataType": "Calculated centers from tree locations",
+  "note": "This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.",
   "geojson": {
     "type": "FeatureCollection",
     "features": [...]
   },
   "summary": {
-    "neighborhoods": ["Manhattan 1", "Manhattan 2", ...],
+    "neighborhoods": ["Forest Hills", "Astoria", ...],
     "boroughs": ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
   }
 }
@@ -79,19 +84,22 @@ None (all parameters are optional with defaults)
 {
   "success": true,
   "source": "NY Open Data",
-  "dataset": "Community Districts",
+  "dataset": "NYC Trees Dataset (Calculated Centers)",
   "borough": "Manhattan",
   "totalNeighborhoods": 12,
+  "dataType": "Calculated centers from tree locations",
+  "note": "This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.",
   "boroughCounts": {
     "Manhattan": 12
   },
   "neighborhoods": [
     {
-      "name": "Manhattan 1",
+      "name": "Upper East Side",
       "borough": "Manhattan",
-      "cd": "101",
-      "population": 164000,
-      "area": 1234567
+      "nta_code": "MN31",
+      "treeCount": 45,
+      "latitude": 40.7629,
+      "longitude": -73.9654
     }
   ]
 }
@@ -130,19 +138,23 @@ None (all parameters are optional with defaults)
 
 ## Data Details
 
-### Community Districts
+### Calculated Neighborhood Centers
 - **Official NYC neighborhoods** as defined by the city
-- **Geographic boundaries** with precise coordinates
-- **Population data** and area information
-- **Official names** and district numbers
+- **Calculated centers** based on tree location averages
+- **Tree count data** for each neighborhood
+- **Official names** and NTA codes
+- **Note**: Centers are calculated from tree locations, not official boundaries
 
 ### Data Fields
 - `name`: Neighborhood name
 - `borough`: Borough name
-- `cd`: Community District number
-- `population`: Population data (when available)
-- `area`: Geographic area (when available)
-- `geometry`: GeoJSON geometry for mapping
+- `nta_code`: Neighborhood Tabulation Area code
+- `zipcode`: ZIP code (when available)
+- `zip_city`: City name for ZIP code (when available)
+- `latitude`: Calculated center latitude (average of tree locations)
+- `longitude`: Calculated center longitude (average of tree locations)
+- `treeCount`: Number of trees used to calculate the center
+- `geometry`: GeoJSON geometry for mapping (Point)
 
 ## Examples
 

@@ -283,6 +283,7 @@ const PurePreviewMessage = ({
                     state={state}
                     input={input}
                     output={output}
+                    chatId={chatId}
                   />
                 );
               }

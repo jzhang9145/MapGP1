@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useSWRConfig } from 'swr';
+
 interface UpdateAreaToolProps {
   toolCallId: string;
   state:
@@ -7,6 +10,7 @@ interface UpdateAreaToolProps {
     | 'output-error';
   input?: any;
   output?: any;
+  chatId?: string;
 }
 
 export const UpdateAreaTool = ({
@@ -14,7 +18,17 @@ export const UpdateAreaTool = ({
   state,
   input,
   output,
+  chatId,
 }: UpdateAreaToolProps) => {
+  const { mutate } = useSWRConfig();
+
+  // Trigger map update when area is successfully updated
+  useEffect(() => {
+    if (state === 'output-available' && !('error' in output) && chatId) {
+      // Trigger a refresh of the area data to update the map
+      mutate(`/api/chat/${chatId}/area`);
+    }
+  }, [state, output, chatId, mutate]);
   if (state === 'input-streaming' || state === 'input-available') {
     return (
       <div className="skeleton">

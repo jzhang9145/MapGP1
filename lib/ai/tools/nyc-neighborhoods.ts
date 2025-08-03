@@ -1,9 +1,101 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
+// Cache the processed neighborhood data in memory
+let cachedNeighborhoods: any[] | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+interface NeighborhoodData {
+  name: string;
+  borough: string;
+  nta_code: string;
+  zipcode?: string;
+  zip_city?: string;
+  latitude: number;
+  longitude: number;
+  treeCount: number;
+}
+
+async function fetchAndProcessNYCData(): Promise<NeighborhoodData[]> {
+  try {
+    const baseUrl = 'https://data.cityofnewyork.us/resource/';
+    const selectedDataset = 'uvpi-gqnh.json';
+    const url = `${baseUrl}${selectedDataset}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`NY Open Data API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Group by neighborhood and calculate proper centers
+    const neighborhoodGroups = data.reduce((acc: any, item: any) => {
+      const key = item.nta_name;
+      if (!acc[key]) {
+        acc[key] = {
+          name: item.nta_name,
+          borough: item.boroname,
+          nta_code: item.nta,
+          zipcode: item.zipcode,
+          zip_city: item.zip_city,
+          trees: [],
+          latitude: Number.parseFloat(item.latitude || 0),
+          longitude: Number.parseFloat(item.longitude || 0),
+        };
+      }
+      acc[key].trees.push({
+        latitude: Number.parseFloat(item.latitude || 0),
+        longitude: Number.parseFloat(item.longitude || 0),
+      });
+      return acc;
+    }, {});
+
+    // Calculate proper centers for each neighborhood
+    const neighborhoods = Object.values(neighborhoodGroups).map(
+      (neighborhood: any) => {
+        if (neighborhood.trees.length > 0) {
+          const avgLat =
+            neighborhood.trees.reduce(
+              (sum: number, tree: any) => sum + tree.latitude,
+              0,
+            ) / neighborhood.trees.length;
+          const avgLng =
+            neighborhood.trees.reduce(
+              (sum: number, tree: any) => sum + tree.longitude,
+              0,
+            ) / neighborhood.trees.length;
+          return {
+            ...neighborhood,
+            latitude: avgLat,
+            longitude: avgLng,
+            treeCount: neighborhood.trees.length,
+          };
+        }
+        return {
+          ...neighborhood,
+          treeCount: 0,
+        };
+      },
+    );
+
+    return neighborhoods;
+  } catch (error) {
+    console.error('Error fetching NYC neighborhoods data:', error);
+    throw error;
+  }
+}
+
 export const nycNeighborhoods = tool({
   description:
-    'Fetch NYC neighborhood data with calculated centers from tree locations. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Note: Currently uses tree location data to calculate neighborhood centers as polygon boundaries are not available in the current dataset.',
+    'Fetch NYC neighborhood data with calculated centers from tree locations. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Data is cached for 24 hours for improved performance.',
   inputSchema: z.object({
     borough: z
       .enum([
@@ -41,34 +133,23 @@ export const nycNeighborhoods = tool({
     limit = 50,
   }) => {
     try {
-      // NY Open Data endpoint for NYC neighborhoods
-      const baseUrl = 'https://data.cityofnewyork.us/resource/';
-
-      // Use the NYC Trees dataset which contains neighborhood information
-      // Note: This dataset contains individual tree locations, not polygon boundaries
-      const selectedDataset = 'uvpi-gqnh.json';
-      const url = `${baseUrl}${selectedDataset}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`NY Open Data API error: ${response.status}`);
+      // Check if cache is valid
+      const now = Date.now();
+      if (!cachedNeighborhoods || now - lastFetchTime > CACHE_DURATION) {
+        console.log('Fetching fresh NYC neighborhoods data...');
+        cachedNeighborhoods = await fetchAndProcessNYCData();
+        lastFetchTime = now;
+      } else {
+        console.log('Using cached NYC neighborhoods data');
       }
 
-      const data = await response.json();
-
       // Filter data based on parameters
-      let filteredData = data;
+      let filteredData = cachedNeighborhoods;
 
       // Filter by borough if specified
       if (borough !== 'All') {
         filteredData = filteredData.filter(
-          (item: any) => item.boroname?.toLowerCase() === borough.toLowerCase(),
+          (item: any) => item.borough?.toLowerCase() === borough.toLowerCase(),
         );
       }
 
@@ -76,103 +157,57 @@ export const nycNeighborhoods = tool({
       if (neighborhood) {
         const searchTerm = neighborhood.toLowerCase();
         filteredData = filteredData.filter((item: any) =>
-          item.nta_name?.toLowerCase().includes(searchTerm),
+          item.name?.toLowerCase().includes(searchTerm),
         );
       }
 
-      // Group by neighborhood and calculate proper centers
-      const neighborhoodGroups = filteredData.reduce((acc: any, item: any) => {
-        const key = item.nta_name;
-        if (!acc[key]) {
-          acc[key] = {
-            name: item.nta_name,
-            borough: item.boroname,
-            nta_code: item.nta,
-            zipcode: item.zipcode,
-            zip_city: item.zip_city,
-            trees: [],
-            latitude: Number.parseFloat(item.latitude || 0),
-            longitude: Number.parseFloat(item.longitude || 0),
-          };
-        }
-        acc[key].trees.push({
-          latitude: Number.parseFloat(item.latitude || 0),
-          longitude: Number.parseFloat(item.longitude || 0),
-        });
-        return acc;
-      }, {});
-
-      // Calculate proper centers for each neighborhood
-      const neighborhoods = Object.values(neighborhoodGroups).map(
-        (neighborhood: any) => {
-          if (neighborhood.trees.length > 0) {
-            const avgLat =
-              neighborhood.trees.reduce(
-                (sum: number, tree: any) => sum + tree.latitude,
-                0,
-              ) / neighborhood.trees.length;
-            const avgLng =
-              neighborhood.trees.reduce(
-                (sum: number, tree: any) => sum + tree.longitude,
-                0,
-              ) / neighborhood.trees.length;
-            return {
-              ...neighborhood,
-              latitude: avgLat,
-              longitude: avgLng,
-              treeCount: neighborhood.trees.length,
-            };
-          }
-          return neighborhood;
-        },
-      );
+      // Apply limit
+      const limitedData = filteredData.slice(0, limit);
 
       if (format === 'summary') {
-        // Return summary information
-        const summaryNeighborhoods = neighborhoods.map((item: any) => ({
-          name: item.name || 'Unknown Neighborhood',
-          borough: item.borough || 'Unknown Borough',
-          nta_code: item.nta_code || 'Unknown NTA',
-          zipcode: item.zipcode,
-          zip_city: item.zip_city,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          treeCount: item.treeCount || 0,
-        }));
-
-        const boroughCounts = summaryNeighborhoods.reduce(
-          (acc: any, item: any) => {
-            acc[item.borough] = (acc[item.borough] || 0) + 1;
-            return acc;
-          },
-          {},
-        );
+        const boroughCounts = limitedData.reduce((acc: any, item: any) => {
+          acc[item.borough] = (acc[item.borough] || 0) + 1;
+          return acc;
+        }, {});
 
         return {
           success: true,
-          source: 'NY Open Data',
+          source: 'NY Open Data (Cached)',
           dataset: 'NYC Trees Dataset (Calculated Centers)',
           borough,
           neighborhood: neighborhood || null,
-          totalNeighborhoods: summaryNeighborhoods.length,
+          totalNeighborhoods: limitedData.length,
           boroughCounts,
-          neighborhoods: summaryNeighborhoods.slice(0, limit),
-          dataType: 'Calculated centers from tree locations',
-          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.',
-        };
-      } else {
-        // Return GeoJSON format
-        const features = neighborhoods.map((item: any) => ({
-          type: 'Feature',
-          properties: {
-            name: item.name || 'Unknown Neighborhood',
-            borough: item.borough || 'Unknown Borough',
-            nta_code: item.nta_code || 'Unknown NTA',
+          neighborhoods: limitedData.map((item: any) => ({
+            name: item.name,
+            borough: item.borough,
+            nta_code: item.nta_code,
             zipcode: item.zipcode,
             zip_city: item.zip_city,
             latitude: item.latitude,
             longitude: item.longitude,
-            treeCount: item.treeCount || 0,
+            treeCount: item.treeCount,
+          })),
+          dataType: 'Calculated centers from tree locations',
+          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. Data is cached for 24 hours.',
+          cacheInfo: {
+            lastUpdated: new Date(lastFetchTime).toISOString(),
+            cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes
+          },
+        };
+      } else {
+        // Return GeoJSON format
+        const features = limitedData.map((item: any) => ({
+          type: 'Feature',
+          properties: {
+            name: item.name,
+            borough: item.borough,
+            nta_code: item.nta_code,
+            zipcode: item.zipcode,
+            zip_city: item.zip_city,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            treeCount: item.treeCount,
           },
           geometry: {
             type: 'Point',
@@ -187,14 +222,18 @@ export const nycNeighborhoods = tool({
 
         return {
           success: true,
-          source: 'NY Open Data',
+          source: 'NY Open Data (Cached)',
           dataset: 'NYC Trees Dataset (Calculated Centers)',
           borough,
           neighborhood: neighborhood || null,
           totalFeatures: geojson.features.length,
           geojson,
           dataType: 'Calculated centers from tree locations',
-          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. For full polygon boundaries, a different dataset would be needed.',
+          note: 'This dataset contains individual tree locations. Neighborhood centers are calculated as averages of all tree locations within each neighborhood. Data is cached for 24 hours.',
+          cacheInfo: {
+            lastUpdated: new Date(lastFetchTime).toISOString(),
+            cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes
+          },
           summary: {
             neighborhoods: geojson.features.map((f: any) => f.properties.name),
             boroughs: [

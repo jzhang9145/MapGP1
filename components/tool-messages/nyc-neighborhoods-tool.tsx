@@ -60,6 +60,13 @@ export const NYCNeighborhoodsTool = ({
                 {output.note}
               </div>
             )}
+            {output.cacheInfo && (
+              <div className="text-xs text-blue-300 mt-1">
+                <strong>Cache:</strong> Last updated{' '}
+                {output.cacheInfo.lastUpdated}({output.cacheInfo.cacheAge}{' '}
+                minutes ago)
+              </div>
+            )}
           </div>
           <div className="text-sm text-blue-600">
             <div>

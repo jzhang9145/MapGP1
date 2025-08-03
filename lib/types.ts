@@ -3,10 +3,12 @@ import type { getWeather } from './ai/tools/get-weather';
 import type { createDocument } from './ai/tools/create-document';
 import type { updateDocument } from './ai/tools/update-document';
 import type { requestSuggestions } from './ai/tools/request-suggestions';
+import type { updateAreaTool } from './ai/tools/update-area';
 import type { InferUITool, UIMessage } from 'ai';
 
 import type { ArtifactKind } from '@/components/artifact';
 import type { Suggestion } from './db/schema';
+import type { webSearch } from './ai/tools/web-search';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -22,12 +24,17 @@ type updateDocumentTool = InferUITool<ReturnType<typeof updateDocument>>;
 type requestSuggestionsTool = InferUITool<
   ReturnType<typeof requestSuggestions>
 >;
+type updateAreaToolType = InferUITool<ReturnType<typeof updateAreaTool>>;
+type webSearchTool = InferUITool<typeof webSearch>;
 
 export type ChatTools = {
   getWeather: weatherTool;
   createDocument: createDocumentTool;
   updateDocument: updateDocumentTool;
   requestSuggestions: requestSuggestionsTool;
+
+  webSearch: webSearchTool;
+  updateArea: updateAreaToolType;
 };
 
 export type CustomUIDataTypes = {

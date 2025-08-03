@@ -24,6 +24,7 @@ import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { updateAreaTool } from '@/lib/ai/tools/update-area';
+import { readJSON } from '@/lib/ai/tools/read-json';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -168,6 +169,7 @@ export async function POST(request: Request) {
                   'requestSuggestions',
                   'webSearch',
                   'updateArea',
+                  'readJSON',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -184,6 +186,7 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            readJSON,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

@@ -724,3 +724,18 @@ export async function updateArea({
     throw new ChatSDKError('bad_request:database', 'Failed to update area');
   }
 }
+
+export async function getGeoJSONDataById({ id }: { id: string }) {
+  try {
+    const [geojsonDataRecord] = await db
+      .select()
+      .from(geojsonData)
+      .where(eq(geojsonData.id, id));
+    return geojsonDataRecord;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get GeoJSON data by ID',
+    );
+  }
+}

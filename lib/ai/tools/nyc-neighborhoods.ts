@@ -1,264 +1,173 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { createGeoJSONData } from '@/lib/db/queries';
+import { ChatSDKError } from '@/lib/errors';
+import { neighborhoodDataSchema, type NeighborhoodData } from '@/lib/schemas';
 
 // Cache the processed neighborhood data in memory
 let cachedNeighborhoods: any[] | null = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-interface NeighborhoodData {
-  name: string;
-  borough: string;
-  nta_code: string;
-  nta_name: string;
-  nta_2020: string;
-  cdtca: string;
-  cdtca_name: string;
-  geometry: any; // GeoJSON polygon geometry
-  center: {
-    latitude: number;
-    longitude: number;
-  };
-  shape_area?: string;
-  shape_leng?: string;
+// Store geometry data in GeoJSONData table and return the ID
+async function storeGeometryData(geojson: any, metadata: any) {
+  const geojsonData = await createGeoJSONData({
+    data: geojson,
+    metadata: {
+      type: 'nyc_neighborhoods',
+      source: 'NY Open Data',
+      dataset: 'NYC Neighborhood Tabulation Areas 2020',
+      ...metadata,
+    },
+  });
+  return geojsonData[0].id;
 }
 
-async function fetchAndProcessNYCData(): Promise<NeighborhoodData[]> {
-  try {
-    const baseUrl = 'https://data.cityofnewyork.us/resource/';
-    // Use the official NYC Neighborhood Tabulation Areas 2020 dataset
-    const selectedDataset = '9nt8-h7nd.json';
-    const url = `${baseUrl}${selectedDataset}`;
+// Fetch and process NYC neighborhood data
+async function fetchAndProcessNYCData() {
+  const now = Date.now();
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      },
-    });
+  // Return cached data if still valid
+  if (
+    cachedNeighborhoods &&
+    lastFetchTime > 0 &&
+    now - lastFetchTime < CACHE_DURATION
+  ) {
+    return cachedNeighborhoods;
+  }
+
+  try {
+    // Fetch data from NYC Open Data API
+    const response = await fetch(
+      'https://data.cityofnewyork.us/resource/5uac-w243.json',
+    );
 
     if (!response.ok) {
-      throw new Error(`NY Open Data API error: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
 
-    // Process the official NTA data with polygon geometries
-    const neighborhoods = data.map((item: any) => {
-      // Parse the geometry if it's a string
-      let geometry = null;
-      if (item.the_geom) {
-        try {
-          geometry =
-            typeof item.the_geom === 'string'
-              ? JSON.parse(item.the_geom)
-              : item.the_geom;
-        } catch (e) {
-          console.warn('Failed to parse geometry for', item.ntaname);
-        }
-      }
+    // Process and store geometry data
+    const processedData = await Promise.all(
+      data.map(async (item: any) => {
+        // Store the geometry data and get the ID
+        const geojsonDataId = await storeGeometryData(item.the_geom, {
+          neighborhood: item.nta_name,
+          borough: item.boro_name,
+          nta_code: item.nta_code,
+        });
 
-      // Calculate center from polygon if geometry is available
-      let center = { latitude: 0, longitude: 0 };
-      if (geometry?.coordinates?.[0]?.[0]) {
-        const coords = geometry.coordinates[0][0]; // First ring of first polygon
-        const avgLat =
-          coords.reduce((sum: number, coord: number[]) => sum + coord[1], 0) /
-          coords.length;
-        const avgLng =
-          coords.reduce((sum: number, coord: number[]) => sum + coord[0], 0) /
-          coords.length;
-        center = { latitude: avgLat, longitude: avgLng };
-      }
+        return {
+          name: item.nta_name,
+          borough: item.boro_name,
+          nta_code: item.nta_code,
+          nta_name: item.nta_name,
+          nta_2020: item.nta2020,
+          cdtca: item.cdtca,
+          cdtca_name: item.cdtca_name,
+          center: {
+            latitude: Number.parseFloat(item.latitude),
+            longitude: Number.parseFloat(item.longitude),
+          },
+          geojsonDataId, // Store the reference ID instead of geometry
+          shape_area: item.shape_area,
+          shape_leng: item.shape_leng,
+        };
+      }),
+    );
 
-      return {
-        name: item.ntaname,
-        borough: item.boroname,
-        nta_code: item.nta2020,
-        nta_name: item.ntaname,
-        nta_2020: item.nta2020,
-        cdtca: item.cdta2020,
-        cdtca_name: item.cdtaname,
-        geometry: geometry,
-        center: center,
-        shape_area: item.shape_area,
-        shape_leng: item.shape_leng,
-      };
-    });
+    // Update cache
+    cachedNeighborhoods = processedData;
+    lastFetchTime = now;
 
-    return neighborhoods;
+    return processedData;
   } catch (error) {
-    console.error('Error fetching NYC neighborhoods data:', error);
-    throw error;
+    console.error('Error fetching NYC data:', error);
+    throw new ChatSDKError(
+      'bad_request:api',
+      'Failed to fetch NYC neighborhood data',
+    );
   }
 }
 
 export const nycNeighborhoods = tool({
   description:
-    'Fetch NYC neighborhood data with official polygon boundaries from the NYC Neighborhood Tabulation Areas 2020 dataset. This tool retrieves neighborhood information for New York City by borough or search for specific neighborhoods by name. Data includes complete polygon geometries for accurate mapping and area calculations. Data is cached for 24 hours for improved performance.',
+    'Get NYC neighborhood data from official NYC Neighborhood Tabulation Areas. Returns geographic boundaries, demographics, and neighborhood information for New York City areas. Geometry data is stored separately and referenced by ID to optimize performance.',
   inputSchema: z.object({
-    borough: z
-      .enum([
-        'Manhattan',
-        'Brooklyn',
-        'Queens',
-        'Bronx',
-        'Staten Island',
-        'All',
-      ])
-      .optional()
-      .default('All')
-      .describe('Specific borough to fetch neighborhoods for (default: All)'),
     neighborhood: z
       .string()
       .optional()
-      .describe(
-        'Search for a specific neighborhood by name (e.g., "Greenpoint", "Williamsburg")',
-      ),
-    format: z
-      .enum(['geojson', 'summary'])
-      .optional()
-      .default('geojson')
-      .describe('Return format - full GeoJSON or summary information'),
-    limit: z
-      .number()
-      .optional()
-      .default(50)
-      .describe('Maximum number of neighborhoods to return (default: 50)'),
+      .describe('Specific neighborhood name to search for'),
   }),
-  execute: async ({
-    borough = 'All',
-    neighborhood,
-    format = 'geojson',
-    limit = 50,
-  }) => {
-    try {
-      // Check if cache is valid
-      const now = Date.now();
-      if (!cachedNeighborhoods || now - lastFetchTime > CACHE_DURATION) {
-        console.log('Fetching fresh NYC neighborhoods data...');
-        cachedNeighborhoods = await fetchAndProcessNYCData();
-        lastFetchTime = now;
-      } else {
-        console.log('Using cached NYC neighborhoods data');
-      }
+  outputSchema: neighborhoodDataSchema,
+  execute: async ({ neighborhood }): Promise<NeighborhoodData> => {
+    const now = Date.now();
 
-      // Filter data based on parameters
-      let filteredData = cachedNeighborhoods;
+    // Fetch or get cached data
+    const neighborhoods = await fetchAndProcessNYCData();
 
-      // Filter by borough if specified
-      if (borough !== 'All') {
-        filteredData = filteredData.filter(
-          (item: any) => item.borough?.toLowerCase() === borough.toLowerCase(),
-        );
-      }
-
-      // Filter by neighborhood if specified
-      if (neighborhood) {
-        const searchTerm = neighborhood.toLowerCase();
-        filteredData = filteredData.filter((item: any) =>
-          item.name?.toLowerCase().includes(searchTerm),
-        );
-      }
-
-      // Apply limit
-      const limitedData = filteredData.slice(0, limit);
-
-      if (format === 'summary') {
-        const boroughCounts = limitedData.reduce((acc: any, item: any) => {
-          acc[item.borough] = (acc[item.borough] || 0) + 1;
-          return acc;
-        }, {});
-
-        return {
-          success: true,
-          source: 'NY Open Data (Cached)',
-          dataset: 'NYC Neighborhood Tabulation Areas 2020',
-          borough,
-          neighborhood: neighborhood || null,
-          totalNeighborhoods: limitedData.length,
-          boroughCounts,
-          neighborhoods: limitedData.map((item: any) => ({
-            name: item.name,
-            borough: item.borough,
-            nta_code: item.nta_code,
-            nta_2020: item.nta_2020,
-            cdtca: item.cdtca,
-            cdtca_name: item.cdtca_name,
-            center: item.center,
-            hasPolygon: !!item.geometry,
-            shape_area: item.shape_area,
-            shape_leng: item.shape_leng,
-          })),
-          dataType:
-            'Official polygon boundaries from NYC Neighborhood Tabulation Areas',
-          note: 'This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.',
-          cacheInfo: {
-            lastUpdated: new Date(lastFetchTime).toISOString(),
-            cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes
-          },
-        };
-      } else {
-        // Return GeoJSON format with polygon geometries
-        const features = limitedData.map((item: any) => ({
-          type: 'Feature',
-          properties: {
-            name: item.name,
-            borough: item.borough,
-            nta_code: item.nta_code,
-            nta_2020: item.nta_2020,
-            cdtca: item.cdtca,
-            cdtca_name: item.cdtca_name,
-            center_lat: item.center.latitude,
-            center_lng: item.center.longitude,
-            shape_area: item.shape_area,
-            shape_leng: item.shape_leng,
-          },
-          geometry: item.geometry || {
-            type: 'Point',
-            coordinates: [item.center.longitude, item.center.latitude],
-          },
-        }));
-
-        const geojson = {
-          type: 'FeatureCollection',
-          features: features.filter((f: any) => f.geometry !== null),
-        };
-
-        return {
-          success: true,
-          source: 'NY Open Data (Cached)',
-          dataset: 'NYC Neighborhood Tabulation Areas 2020',
-          borough,
-          neighborhood: neighborhood || null,
-          totalFeatures: geojson.features.length,
-          geojson,
-          dataType:
-            'Official polygon boundaries from NYC Neighborhood Tabulation Areas',
-          note: 'This dataset contains official NYC Neighborhood Tabulation Areas with complete polygon boundaries for accurate mapping and area calculations.',
-          cacheInfo: {
-            lastUpdated: new Date(lastFetchTime).toISOString(),
-            cacheAge: Math.floor((now - lastFetchTime) / 1000 / 60), // minutes
-          },
-          summary: {
-            neighborhoods: geojson.features.map((f: any) => f.properties.name),
-            boroughs: [
-              ...new Set(
-                geojson.features.map((f: any) => f.properties.borough),
-              ),
-            ],
-          },
-        };
-      }
-    } catch (error) {
-      console.error('NYC Neighborhoods error:', error);
-      return {
-        error: 'Failed to fetch NYC neighborhood data',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        borough,
-        neighborhood: neighborhood || null,
-        format,
-      };
+    if (!cachedNeighborhoods || cachedNeighborhoods.length === 0) {
+      throw new ChatSDKError(
+        'bad_request:api',
+        'NYC neighborhoods data not found',
+      );
     }
+
+    // Filter data based on parameters
+    let filteredData = cachedNeighborhoods;
+
+    if (neighborhood) {
+      filteredData = filteredData.filter((item: any) =>
+        item.name.toLowerCase().includes(neighborhood.toLowerCase()),
+      );
+    }
+
+    if (filteredData.length === 1) {
+      return filteredData[0];
+    }
+
+    console.log(filteredData);
+
+    // Return GeoJSON format - we need to reconstruct the geojson from stored data
+    // For now, return a simplified version with center points
+    // In a full implementation, you would fetch the geometry data from GeoJSONData table
+    const features = filteredData.map((item: any) => ({
+      type: 'Feature' as const,
+      properties: {
+        name: item.name,
+        borough: item.borough,
+        nta_code: item.nta_code,
+        nta_2020: item.nta_2020,
+        cdtca: item.cdtca,
+        cdtca_name: item.cdtca_name,
+        center_lat: item.center.latitude,
+        center_lng: item.center.longitude,
+        geojsonDataId: item.geojsonDataId,
+        shape_area: item.shape_area,
+        shape_leng: item.shape_leng,
+      },
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [item.center.longitude, item.center.latitude] as [
+          number,
+          number,
+        ],
+      },
+    }));
+
+    const geojson = {
+      type: 'FeatureCollection' as const,
+      features: features,
+    };
+
+    const geojsonDataId = await storeGeometryData(geojson, {
+      neighborhood: neighborhood || null,
+    });
+
+    return {
+      name: neighborhood || 'All',
+      geojsonDataId,
+    };
   },
 });

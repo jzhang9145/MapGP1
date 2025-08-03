@@ -138,12 +138,12 @@ export function Chat({
     <>
       <div className="flex h-dvh bg-background">
         {/* Map Section - 2/3 of the screen */}
-        <div className="w-2/3 h-full">
+        <div className="w-1/2 h-full">
           <AreaMap chatId={id} area={area} />
         </div>
 
         {/* Chat Section - 1/3 of the screen */}
-        <div className="w-1/3 flex flex-col min-w-0 h-full">
+        <div className="w-1/2 flex flex-col min-w-0 h-full">
           <ChatHeader
             chatId={id}
             selectedModelId={initialChatModel}

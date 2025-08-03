@@ -10,6 +10,7 @@ import type { ArtifactKind } from '@/components/artifact';
 import type { Suggestion } from './db/schema';
 import type { webSearch } from './ai/tools/web-search';
 import type { readJSON } from './ai/tools/read-json';
+import type { nycNeighborhoods } from './ai/tools/nyc-neighborhoods';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -28,6 +29,7 @@ type requestSuggestionsTool = InferUITool<
 type updateAreaToolType = InferUITool<ReturnType<typeof updateAreaTool>>;
 type webSearchTool = InferUITool<typeof webSearch>;
 type readJSONTool = InferUITool<typeof readJSON>;
+type nycNeighborhoodsTool = InferUITool<typeof nycNeighborhoods>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -38,6 +40,7 @@ export type ChatTools = {
   webSearch: webSearchTool;
   updateArea: updateAreaToolType;
   readJSON: readJSONTool;
+  nycNeighborhoods: nycNeighborhoodsTool;
 };
 
 export type CustomUIDataTypes = {

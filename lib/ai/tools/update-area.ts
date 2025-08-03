@@ -35,6 +35,7 @@ export const updateAreaTool = ({
         ),
     }),
     execute: async ({ name, summary, geojson }) => {
+      console.log('updateAreaTool', { name, summary, geojson });
       try {
         // Check if area exists
         const existingArea = await getAreaByChatId({ chatId });

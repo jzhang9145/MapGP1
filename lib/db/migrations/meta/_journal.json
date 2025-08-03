@@ -57,6 +57,13 @@
       "when": 1754225166852,
       "tag": "0010_productive_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1754247361861,
+      "tag": "0011_cold_puppet_master",
+      "breakpoints": true
     }
   ]
 }

@@ -170,6 +170,17 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
+// New GeoJSONData table to store large geojson data separately
+export const geojsonData = pgTable('GeoJSONData', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  data: json('data').notNull(),
+  metadata: json('metadata').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type GeoJSONData = InferSelectModel<typeof geojsonData>;
+
 export const area = pgTable('Area', {
   chatId: uuid('chatId')
     .primaryKey()
@@ -177,7 +188,9 @@ export const area = pgTable('Area', {
     .references(() => chat.id),
   name: varchar('name', { length: 255 }).notNull(),
   summary: text('summary').notNull(),
-  geojson: json('geojson').notNull(),
+  geojsonDataId: uuid('geojsonDataId')
+    .notNull()
+    .references(() => geojsonData.id),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
@@ -211,4 +224,9 @@ export interface GeoJSONFeatureCollection {
   features: GeoJSONFeature[];
 }
 
-export type GeoJSON = GeoJSONPoint | GeoJSONPolygon | GeoJSONMultiPolygon | GeoJSONFeature | GeoJSONFeatureCollection;
+export type GeoJSON =
+  | GeoJSONPoint
+  | GeoJSONPolygon
+  | GeoJSONMultiPolygon
+  | GeoJSONFeature
+  | GeoJSONFeatureCollection;

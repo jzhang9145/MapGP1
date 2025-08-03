@@ -32,6 +32,7 @@ interface AreaMapProps {
     name: string;
     summary: string;
     geojson: any;
+    geojsonDataId?: string;
   } | null;
 }
 

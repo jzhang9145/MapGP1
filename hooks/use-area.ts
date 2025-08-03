@@ -5,7 +5,8 @@ interface Area {
   chatId: string;
   name: string;
   summary: string;
-  geojson: any;
+  geojson: any; // For backward compatibility
+  geojsonDataId?: string; // New field for reference
 }
 
 export function useArea(chatId: string) {

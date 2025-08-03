@@ -29,6 +29,8 @@ import {
   stream,
   area,
   type Area,
+  geojsonData,
+  type GeoJSONData,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -543,14 +545,92 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
 export async function getAreaByChatId({ chatId }: { chatId: string }) {
   try {
     const [selectedArea] = await db
-      .select()
+      .select({
+        chatId: area.chatId,
+        name: area.name,
+        summary: area.summary,
+        geojsonDataId: area.geojsonDataId,
+        createdAt: area.createdAt,
+        updatedAt: area.updatedAt,
+        geojsonData: {
+          id: geojsonData.id,
+          data: geojsonData.data,
+          metadata: geojsonData.metadata,
+          createdAt: geojsonData.createdAt,
+          updatedAt: geojsonData.updatedAt,
+        },
+      })
       .from(area)
+      .leftJoin(geojsonData, eq(area.geojsonDataId, geojsonData.id))
       .where(eq(area.chatId, chatId));
-    return selectedArea;
+
+    if (!selectedArea) return null;
+
+    return {
+      chatId: selectedArea.chatId,
+      name: selectedArea.name,
+      summary: selectedArea.summary,
+      geojson: selectedArea.geojsonData?.data || null,
+      geojsonDataId: selectedArea.geojsonDataId,
+      createdAt: selectedArea.createdAt,
+      updatedAt: selectedArea.updatedAt,
+    };
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get area by chat ID',
+    );
+  }
+}
+
+export async function createGeoJSONData({
+  data,
+  metadata,
+}: {
+  data: any;
+  metadata: any;
+}) {
+  try {
+    return await db
+      .insert(geojsonData)
+      .values({
+        data,
+        metadata,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create GeoJSON data',
+    );
+  }
+}
+
+export async function updateGeoJSONData({
+  id,
+  data,
+  metadata,
+}: {
+  id: string;
+  data: any;
+  metadata: any;
+}) {
+  try {
+    return await db
+      .update(geojsonData)
+      .set({
+        data,
+        metadata,
+        updatedAt: new Date(),
+      })
+      .where(eq(geojsonData.id, id))
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to update GeoJSON data',
     );
   }
 }
@@ -567,13 +647,26 @@ export async function createArea({
   geojson: any;
 }) {
   try {
+    // First create GeoJSONData
+    const metadata = {
+      type: geojson?.type || 'unknown',
+      size: JSON.stringify(geojson).length,
+      createdAt: new Date().toISOString(),
+    };
+
+    const [geojsonDataRecord] = await createGeoJSONData({
+      data: geojson,
+      metadata,
+    });
+
+    // Then create Area with reference to GeoJSONData
     return await db
       .insert(area)
       .values({
         chatId,
         name,
         summary,
-        geojson,
+        geojsonDataId: geojsonDataRecord.id,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -595,12 +688,34 @@ export async function updateArea({
   geojson: any;
 }) {
   try {
+    // Get existing area to find the GeoJSONData ID
+    const existingArea = await getAreaByChatId({ chatId });
+
+    if (!existingArea) {
+      throw new ChatSDKError('bad_request:database', 'Area not found');
+    }
+
+    // Update GeoJSONData if geojson is provided
+    if (geojson) {
+      const metadata = {
+        type: geojson?.type || 'unknown',
+        size: JSON.stringify(geojson).length,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await updateGeoJSONData({
+        id: existingArea.geojsonDataId,
+        data: geojson,
+        metadata,
+      });
+    }
+
+    // Update Area
     return await db
       .update(area)
       .set({
         name,
         summary,
-        geojson,
         updatedAt: new Date(),
       })
       .where(eq(area.chatId, chatId))

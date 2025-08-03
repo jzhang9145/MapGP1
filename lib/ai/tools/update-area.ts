@@ -17,7 +17,7 @@ export const updateAreaTool = ({
 }: UpdateAreaToolProps) =>
   tool({
     description:
-      'Update the geographic area associated with a chat. This tool can modify the area name, summary, and geographic data (GeoJSON).',
+      'Update the geographic area associated with a chat. This tool can modify the area name, summary, and geographic data (GeoJSON). The tool stores GeoJSON data separately and returns a reference ID to reduce AI context size.',
     inputSchema: z.object({
       name: z
         .string()
@@ -31,7 +31,7 @@ export const updateAreaTool = ({
         .any()
         .optional()
         .describe(
-          'The new GeoJSON data for the area (optional). Can be a Point, Polygon, MultiPolygon, Feature, or FeatureCollection',
+          'The new GeoJSON data for the area (optional). Can be a Point, Polygon, MultiPolygon, Feature, or FeatureCollection. This data will be stored separately and referenced by ID.',
         ),
     }),
     execute: async ({ name, summary, geojson }) => {
@@ -63,7 +63,7 @@ export const updateAreaTool = ({
               chatId: newArea[0].chatId,
               name: newArea[0].name,
               summary: newArea[0].summary,
-              geojson: newArea[0].geojson,
+              geojsonDataId: newArea[0].geojsonDataId,
             },
             message: `Successfully created new area "${name}" for this chat.`,
           };
@@ -87,7 +87,7 @@ export const updateAreaTool = ({
               chatId: updatedArea[0].chatId,
               name: updatedArea[0].name,
               summary: updatedArea[0].summary,
-              geojson: updatedArea[0].geojson,
+              geojsonDataId: existingArea.geojsonDataId,
             },
             message: `Successfully updated area "${updatedArea[0].name}" for this chat.`,
           };

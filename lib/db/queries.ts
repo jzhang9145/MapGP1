@@ -11,6 +11,8 @@ import {
   inArray,
   lt,
   type SQL,
+  or,
+  ilike,
 } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -29,6 +31,8 @@ import {
   stream,
   area,
   geojsonData,
+  nycNeighborhoods,
+  type NYCNeighborhood,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -713,15 +717,144 @@ export async function updateArea({
 
 export async function getGeoJSONDataById({ id }: { id: string }) {
   try {
-    const [geojsonDataRecord] = await db
-      .select()
-      .from(geojsonData)
-      .where(eq(geojsonData.id, id));
-    return geojsonDataRecord;
+    return await db.select().from(geojsonData).where(eq(geojsonData.id, id));
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get GeoJSON data by ID',
+    );
+  }
+}
+
+// NYC Neighborhoods queries
+export async function createNYCNeighborhood({
+  name,
+  borough,
+  nta_code,
+  nta_name,
+  nta_2020,
+  cdtca,
+  cdtca_name,
+  center_latitude,
+  center_longitude,
+  shape_area,
+  shape_leng,
+  geojsonDataId,
+}: {
+  name: string;
+  borough: string;
+  nta_code: string;
+  nta_name: string;
+  nta_2020: string;
+  cdtca: string;
+  cdtca_name: string;
+  center_latitude: number;
+  center_longitude: number;
+  shape_area?: string;
+  shape_leng?: string;
+  geojsonDataId?: string;
+}) {
+  try {
+    return await db
+      .insert(nycNeighborhoods)
+      .values({
+        name,
+        borough,
+        nta_code,
+        nta_name,
+        nta_2020,
+        cdtca,
+        cdtca_name,
+        center_latitude,
+        center_longitude,
+        shape_area,
+        shape_leng,
+        geojsonDataId,
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create NYC neighborhood',
+    );
+  }
+}
+
+export async function getAllNYCNeighborhoods() {
+  try {
+    return await db
+      .select()
+      .from(nycNeighborhoods)
+      .orderBy(asc(nycNeighborhoods.name));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get all NYC neighborhoods',
+    );
+  }
+}
+
+export async function getNYCNeighborhoodsByBorough({
+  borough,
+}: { borough: string }) {
+  try {
+    return await db
+      .select()
+      .from(nycNeighborhoods)
+      .where(eq(nycNeighborhoods.borough, borough))
+      .orderBy(asc(nycNeighborhoods.name));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC neighborhoods by borough',
+    );
+  }
+}
+
+export async function searchNYCNeighborhoods({
+  searchTerm,
+}: { searchTerm: string }) {
+  try {
+    return await db
+      .select()
+      .from(nycNeighborhoods)
+      .where(
+        or(
+          ilike(nycNeighborhoods.name, `%${searchTerm}%`),
+          ilike(nycNeighborhoods.nta_name, `%${searchTerm}%`),
+          ilike(nycNeighborhoods.borough, `%${searchTerm}%`),
+        ),
+      )
+      .orderBy(asc(nycNeighborhoods.name));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search NYC neighborhoods',
+    );
+  }
+}
+
+export async function getNYCNeighborhoodById({ id }: { id: string }) {
+  try {
+    return await db
+      .select()
+      .from(nycNeighborhoods)
+      .where(eq(nycNeighborhoods.id, id));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC neighborhood by ID',
+    );
+  }
+}
+
+export async function clearNYCNeighborhoods() {
+  try {
+    return await db.delete(nycNeighborhoods);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to clear NYC neighborhoods',
     );
   }
 }

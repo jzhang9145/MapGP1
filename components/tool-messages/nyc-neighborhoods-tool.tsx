@@ -47,7 +47,7 @@ export const NYCNeighborhoodsTool = ({
           </div>
           <div className="text-sm text-blue-600 mb-1">
             <div>
-              <strong>Borough:</strong> {output.borough}
+              <strong>Borough:</strong> {output?.borough}
             </div>
           </div>
           <div className="text-blue-600 text-xs mb-1">
@@ -61,8 +61,7 @@ export const NYCNeighborhoodsTool = ({
   if (state === 'output-error') {
     return (
       <div className="text-red-500 p-2 border rounded">
-        Error fetching NYC neighborhoods:{' '}
-        {String(output?.error || 'Unknown error')}
+        Error fetching NYC neighborhoods: {String(output || 'Unknown error')}
       </div>
     );
   }

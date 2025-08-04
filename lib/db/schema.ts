@@ -197,6 +197,33 @@ export const area = pgTable('Area', {
 
 export type Area = InferSelectModel<typeof area>;
 
+// NYC Neighborhoods table to store neighborhood data locally
+export const nycNeighborhoods = pgTable('NYCNeighborhoods', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  borough: varchar('borough', { length: 100 }).notNull(),
+  nta_code: varchar('nta_code', { length: 50 }).notNull(),
+  nta_name: varchar('nta_name', { length: 255 }).notNull(),
+  nta_2020: varchar('nta_2020', { length: 50 }).notNull(),
+  cdtca: varchar('cdtca', { length: 50 }).notNull(),
+  cdtca_name: varchar('cdtca_name', { length: 255 }).notNull(),
+  center_latitude: decimal('center_latitude', {
+    precision: 10,
+    scale: 8,
+  }).notNull(),
+  center_longitude: decimal('center_longitude', {
+    precision: 11,
+    scale: 8,
+  }).notNull(),
+  shape_area: varchar('shape_area', { length: 50 }),
+  shape_leng: varchar('shape_leng', { length: 50 }),
+  geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type NYCNeighborhood = InferSelectModel<typeof nycNeighborhoods>;
+
 // GeoJSON types for area data
 export interface GeoJSONPoint {
   type: 'Point';

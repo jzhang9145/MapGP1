@@ -64,6 +64,13 @@
       "when": 1754247361861,
       "tag": "0011_cold_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1754289451466,
+      "tag": "0012_brown_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

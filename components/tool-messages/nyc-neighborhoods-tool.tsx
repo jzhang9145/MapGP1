@@ -1,3 +1,5 @@
+import type { NeighborhoodData } from '@/lib/schemas';
+
 interface NYCNeighborhoodsToolProps {
   toolCallId: string;
   state:
@@ -6,7 +8,7 @@ interface NYCNeighborhoodsToolProps {
     | 'output-available'
     | 'output-error';
   input?: any;
-  output?: any;
+  output?: NeighborhoodData;
 }
 
 export const NYCNeighborhoodsTool = ({
@@ -31,14 +33,6 @@ export const NYCNeighborhoodsTool = ({
   }
 
   if (state === 'output-available') {
-    if ('error' in output) {
-      return (
-        <div className="text-red-500 p-2 border rounded">
-          Error fetching NYC neighborhoods: {String(output.error)}
-        </div>
-      );
-    }
-
     return (
       <div>
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -48,88 +42,16 @@ export const NYCNeighborhoodsTool = ({
               NYC Neighborhoods Data
             </div>
           </div>
-          <div className="text-blue-600 text-sm mb-2">
-            <strong>Source:</strong> {output.source} - {output.dataset}
-            {output.dataType && (
-              <div className="text-xs text-blue-500 mt-1">
-                <strong>Data Type:</strong> {output.dataType}
-              </div>
-            )}
-            {output.note && (
-              <div className="text-xs text-blue-400 mt-1 italic">
-                {output.note}
-              </div>
-            )}
-            {output.cacheInfo && (
-              <div className="text-xs text-blue-300 mt-1">
-                <strong>Cache:</strong> Last updated{' '}
-                {output.cacheInfo.lastUpdated}({output.cacheInfo.cacheAge}{' '}
-                minutes ago)
-              </div>
-            )}
+          <div className="text-blue-600 text-sm mb-1">
+            <strong>Name:</strong> {output?.name}
           </div>
-          <div className="text-sm text-blue-600">
+          <div className="text-sm text-blue-600 mb-1">
             <div>
               <strong>Borough:</strong> {output.borough}
             </div>
-            {output.format === 'summary' ? (
-              <>
-                <div>
-                  <strong>Total Neighborhoods:</strong>{' '}
-                  {(output as any).totalNeighborhoods}
-                </div>
-                {(output as any).boroughCounts && (
-                  <div>
-                    <strong>By Borough:</strong>
-                    <ul className="ml-4 mt-1">
-                      {Object.entries((output as any).boroughCounts).map(
-                        ([borough, count]) => (
-                          <li key={borough}>
-                            • {borough}: {String(count)}
-                          </li>
-                        ),
-                      )}
-                    </ul>
-                  </div>
-                )}
-                {(output as any).neighborhoods &&
-                  (output as any).neighborhoods.length > 0 && (
-                    <div>
-                      <strong>Sample Neighborhoods:</strong>
-                      <ul className="ml-4 mt-1">
-                        {(output as any).neighborhoods
-                          .slice(0, 5)
-                          .map((neighborhood: any) => (
-                            <li key={neighborhood.name}>
-                              • {neighborhood.name} ({neighborhood.borough})
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-              </>
-            ) : (
-              <>
-                <div>
-                  <strong>Total Features:</strong> {output.totalFeatures}
-                </div>
-                {output.summary?.boroughs && (
-                  <div>
-                    <strong>Boroughs:</strong>{' '}
-                    {output.summary.boroughs.join(', ')}
-                  </div>
-                )}
-                {output.summary?.neighborhoods && (
-                  <div>
-                    <strong>Neighborhoods:</strong>
-                    <div className="text-xs mt-1 bg-blue-100 p-2 rounded max-h-20 overflow-y-auto">
-                      {output.summary.neighborhoods.slice(0, 10).join(', ')}
-                      {output.summary.neighborhoods.length > 10 && '...'}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+          </div>
+          <div className="text-blue-600 text-xs mb-1">
+            <strong>GeoJSON Data ID:</strong> {output?.geojsonDataId}
           </div>
         </div>
       </div>

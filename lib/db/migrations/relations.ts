@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, suggestion, document, chat, message, messageV2, stream, area, vote, voteV2 } from "./schema";
+import { user, suggestion, document, chat, message, messageV2, stream, area, geoJsonData, vote, voteV2 } from "./schema";
 
 export const suggestionRelations = relations(suggestion, ({one}) => ({
 	user: one(user, {
@@ -67,6 +67,14 @@ export const areaRelations = relations(area, ({one}) => ({
 		fields: [area.chatId],
 		references: [chat.id]
 	}),
+	geoJsonDatum: one(geoJsonData, {
+		fields: [area.geojsonDataId],
+		references: [geoJsonData.id]
+	}),
+}));
+
+export const geoJsonDataRelations = relations(geoJsonData, ({many}) => ({
+	areas: many(area),
 }));
 
 export const voteRelations = relations(vote, ({one}) => ({

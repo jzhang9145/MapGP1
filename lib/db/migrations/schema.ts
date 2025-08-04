@@ -107,9 +107,9 @@ export const area = pgTable("Area", {
 	chatId: uuid().primaryKey().notNull(),
 	name: varchar({ length: 255 }).notNull(),
 	summary: text().notNull(),
-	geojson: json().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	geojsonDataId: uuid().notNull(),
 },
 (table) => {
 	return {
@@ -118,7 +118,20 @@ export const area = pgTable("Area", {
 			foreignColumns: [chat.id],
 			name: "Area_chatId_Chat_id_fk"
 		}),
+		areaGeojsonDataIdGeoJsonDataIdFk: foreignKey({
+			columns: [table.geojsonDataId],
+			foreignColumns: [geoJsonData.id],
+			name: "Area_geojsonDataId_GeoJSONData_id_fk"
+		}),
 	}
+});
+
+export const geoJsonData = pgTable("GeoJSONData", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	data: json().notNull(),
+	metadata: json().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
 export const vote = pgTable("Vote", {

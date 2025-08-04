@@ -75,6 +75,9 @@ export const UpdateAreaTool = ({
               </div>
             </div>
           )}
+          <div className="text-green-600 text-sm">
+            <strong>GeoJSON Data ID:</strong> {output?.area?.geojsonDataId}
+          </div>
         </div>
       </div>
     );

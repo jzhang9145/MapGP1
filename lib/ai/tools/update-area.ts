@@ -27,22 +27,22 @@ export const updateAreaTool = ({
         .string()
         .optional()
         .describe('The new summary description for the area (optional)'),
-      geojson: z
+      geojsonDataId: z
         .any()
         .optional()
         .describe(
-          'The new GeoJSON data for the area (optional). Can be a Point, Polygon, MultiPolygon, Feature, or FeatureCollection. This data will be stored separately and referenced by ID.',
+          'GeoData JSON ID reference to the new GeoJSON data for the area (optional). Can be a Point, Polygon, MultiPolygon, Feature, or FeatureCollection. This data will be stored separately and referenced by ID.',
         ),
     }),
-    execute: async ({ name, summary, geojson }) => {
-      console.log('updateAreaTool', { name, summary, geojson });
+    execute: async ({ name, summary, geojsonDataId }) => {
+      console.log('updateAreaTool', { name, summary, geojsonDataId });
       try {
         // Check if area exists
         const existingArea = await getAreaByChatId({ chatId });
 
         if (!existingArea) {
           // Create new area if it doesn't exist
-          if (!name || !summary || !geojson) {
+          if (!name || !summary || !geojsonDataId) {
             return {
               error:
                 'Area does not exist. To create a new area, all fields (name, summary, geojson) are required.',
@@ -53,42 +53,35 @@ export const updateAreaTool = ({
             chatId,
             name,
             summary,
-            geojson,
+            geojsonDataId,
           });
 
           return {
             success: true,
             action: 'created',
-            area: {
-              chatId: newArea[0].chatId,
-              name: newArea[0].name,
-              summary: newArea[0].summary,
-              geojsonDataId: newArea[0].geojsonDataId,
-            },
+            area: newArea[0],
             message: `Successfully created new area "${name}" for this chat.`,
           };
         } else {
           // Update existing area
           const updatedName = name || existingArea.name;
           const updatedSummary = summary || existingArea.summary;
-          const updatedGeojson = geojson || existingArea.geojson;
+          const updatedGeojson = geojsonDataId || existingArea.geojsonDataId;
 
-          const updatedArea = await updateArea({
+          const updateReq = {
             chatId,
             name: updatedName,
             summary: updatedSummary,
-            geojson: updatedGeojson,
-          });
+            geojsonDataId: updatedGeojson,
+          };
+          console.log('updateReq', updateReq);
+
+          const updatedArea = await updateArea(updateReq);
 
           return {
             success: true,
             action: 'updated',
-            area: {
-              chatId: updatedArea[0].chatId,
-              name: updatedArea[0].name,
-              summary: updatedArea[0].summary,
-              geojsonDataId: existingArea.geojsonDataId,
-            },
+            area: updatedArea[0],
             message: `Successfully updated area "${updatedArea[0].name}" for this chat.`,
           };
         }

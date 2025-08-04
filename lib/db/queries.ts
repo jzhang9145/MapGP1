@@ -28,9 +28,7 @@ import {
   type Chat,
   stream,
   area,
-  type Area,
   geojsonData,
-  type GeoJSONData,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -591,19 +589,34 @@ export async function createGeoJSONData({
   metadata: any;
 }) {
   try {
-    return await db
+    console.log('Creating GeoJSON data with:', { data: typeof data, metadata });
+
+    // Validate that data is not null or undefined
+    if (data === null || data === undefined) {
+      throw new Error('GeoJSON data cannot be null or undefined');
+    }
+
+    // Ensure metadata is an object
+    const safeMetadata =
+      typeof metadata === 'object' ? metadata : { raw: metadata };
+
+    const result = await db
       .insert(geojsonData)
       .values({
         data,
-        metadata,
+        metadata: safeMetadata,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       .returning();
+
+    console.log('Successfully created GeoJSON data:', result[0]?.id);
+    return result;
   } catch (error) {
+    console.error('Error creating GeoJSON data:', error);
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to create GeoJSON data',
+      `Failed to create GeoJSON data: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 }
@@ -639,26 +652,14 @@ export async function createArea({
   chatId,
   name,
   summary,
-  geojson,
+  geojsonDataId,
 }: {
   chatId: string;
   name: string;
   summary: string;
-  geojson: any;
+  geojsonDataId: any;
 }) {
   try {
-    // First create GeoJSONData
-    const metadata = {
-      type: geojson?.type || 'unknown',
-      size: JSON.stringify(geojson).length,
-      createdAt: new Date().toISOString(),
-    };
-
-    const [geojsonDataRecord] = await createGeoJSONData({
-      data: geojson,
-      metadata,
-    });
-
     // Then create Area with reference to GeoJSONData
     return await db
       .insert(area)
@@ -666,7 +667,7 @@ export async function createArea({
         chatId,
         name,
         summary,
-        geojsonDataId: geojsonDataRecord.id,
+        geojsonDataId,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -680,42 +681,27 @@ export async function updateArea({
   chatId,
   name,
   summary,
-  geojson,
+  geojsonDataId,
 }: {
   chatId: string;
   name: string;
   summary: string;
-  geojson: any;
+  geojsonDataId: string;
 }) {
   try {
-    // Get existing area to find the GeoJSONData ID
-    const existingArea = await getAreaByChatId({ chatId });
-
-    if (!existingArea) {
-      throw new ChatSDKError('bad_request:database', 'Area not found');
-    }
-
-    // Update GeoJSONData if geojson is provided
-    if (geojson) {
-      const metadata = {
-        type: geojson?.type || 'unknown',
-        size: JSON.stringify(geojson).length,
-        updatedAt: new Date().toISOString(),
-      };
-
-      await updateGeoJSONData({
-        id: existingArea.geojsonDataId,
-        data: geojson,
-        metadata,
-      });
-    }
-
+    console.log('Updating area with:', {
+      chatId,
+      name,
+      summary,
+      geojsonDataId,
+    });
     // Update Area
     return await db
       .update(area)
       .set({
         name,
         summary,
+        geojsonDataId,
         updatedAt: new Date(),
       })
       .where(eq(area.chatId, chatId))

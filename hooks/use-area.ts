@@ -1,5 +1,9 @@
 import useSWR from 'swr';
 import { fetcher } from '@/lib/utils';
+import { useMemo } from 'react';
+import { useEffect, useRef } from 'react';
+import { useSWRConfig } from 'swr';
+import type { ChatMessage } from '@/lib/types';
 
 interface Area {
   chatId: string;
@@ -10,43 +14,48 @@ interface Area {
 }
 
 export function useArea(chatId: string) {
-  const { data, error, mutate } = useSWR<{ area: Area | null }>(
-    chatId ? `/api/chat/${chatId}/area` : null,
-    fetcher,
+  const url = useMemo(
+    () => (chatId ? `/api/chat/${chatId}/area` : null),
+    [chatId],
   );
-
-  const updateArea = async (areaData: {
-    name: string;
-    summary: string;
-    geojson: any;
-  }) => {
-    try {
-      const response = await fetch(`/api/chat/${chatId}/area`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(areaData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update area');
-      }
-
-      const result = await response.json();
-      mutate(result, false);
-      return result.area;
-    } catch (error) {
-      console.error('Error updating area:', error);
-      throw error;
-    }
-  };
+  const { data, error, mutate } = useSWR<{ area: Area | null }>(url, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnMount: true,
+  });
 
   return {
     area: data?.area || null,
     isLoading: !error && !data,
     isError: error,
-    updateArea,
     mutate,
   };
+}
+
+export function useAreaUpdates(messages: ChatMessage[], chatId: string) {
+  const { mutate: globalMutate } = useSWRConfig();
+  const processedToolCalls = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Look for completed area update tool calls in the messages
+    messages.forEach((message) => {
+      if (message.role === 'assistant' && message.parts) {
+        message.parts.forEach((part) => {
+          if (
+            part.type === 'tool-updateArea' &&
+            'output' in part &&
+            part.state === 'output-available' &&
+            !('error' in part.output) &&
+            !processedToolCalls.current.has(part.toolCallId)
+          ) {
+            // Mark this tool call as processed
+            processedToolCalls.current.add(part.toolCallId);
+
+            // Trigger area mutation
+            const areaKey = `/api/chat/${chatId}/area`;
+            globalMutate(areaKey);
+          }
+        });
+      }
+    });
+  }, [messages, chatId, globalMutate]);
 }

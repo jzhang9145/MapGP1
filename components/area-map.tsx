@@ -33,13 +33,6 @@ const GeoJSON = dynamic(
 
 interface AreaMapProps {
   chatId: string;
-  area?: {
-    chatId: string;
-    name: string;
-    summary: string;
-    geojson: any;
-    geojsonDataId?: string;
-  } | null;
 }
 
 // Default New York City coordinates
@@ -47,7 +40,7 @@ const DEFAULT_LATITUDE = 40.7128;
 const DEFAULT_LONGITUDE = -74.006;
 const DEFAULT_ZOOM = 12;
 
-export function AreaMap({ chatId, area: initialArea }: AreaMapProps) {
+export function AreaMap({ chatId }: AreaMapProps) {
   const [isClient, setIsClient] = useState(false);
   const { area, isLoading } = useArea(chatId);
 
@@ -70,7 +63,7 @@ export function AreaMap({ chatId, area: initialArea }: AreaMapProps) {
   }, []);
 
   // Use the area from the hook if available, otherwise fall back to the initial area
-  const currentArea = area || initialArea;
+  const currentArea = area;
 
   // Use default coordinates and zoom
   const latitude = DEFAULT_LATITUDE;
@@ -78,21 +71,18 @@ export function AreaMap({ chatId, area: initialArea }: AreaMapProps) {
   const zoom = DEFAULT_ZOOM;
 
   const name = currentArea?.name || 'New York City';
-  const summary =
-    currentArea?.summary ||
-    'The Big Apple - A vibrant metropolis known for its iconic skyline, diverse culture, and endless opportunities.';
 
   if (!isClient || isLoading) {
     return (
-      <Card className="h-full w-full flex items-center justify-center">
+      <Card className="size-full flex items-center justify-center">
         <div className="text-muted-foreground">Loading map...</div>
       </Card>
     );
   }
 
   return (
-    <Card className="h-full w-full overflow-hidden">
-      <div className="h-full w-full">
+    <Card className="size-full overflow-hidden">
+      <div className="size-full">
         <MapContainer
           center={[latitude, longitude]}
           zoom={zoom}

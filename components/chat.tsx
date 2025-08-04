@@ -23,6 +23,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
 import { AreaMap } from './area-map';
+import { useAreaUpdates } from '@/hooks/use-area';
 
 export function Chat({
   id,
@@ -32,7 +33,6 @@ export function Chat({
   isReadonly,
   session,
   autoResume,
-  area,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -41,12 +41,6 @@ export function Chat({
   isReadonly: boolean;
   session: Session;
   autoResume: boolean;
-  area?: {
-    chatId: string;
-    name: string;
-    summary: string;
-    geojson: any;
-  } | null;
 }) {
   const { visibilityType } = useChatVisibility({
     chatId: id,
@@ -134,12 +128,15 @@ export function Chat({
     setMessages,
   });
 
+  // Observe area updates and trigger mutations
+  useAreaUpdates(messages, id);
+
   return (
     <>
       <div className="flex h-dvh bg-background">
         {/* Map Section - 2/3 of the screen */}
         <div className="w-1/2 h-full">
-          <AreaMap chatId={id} area={area} />
+          <AreaMap chatId={id} />
         </div>
 
         {/* Chat Section - 1/3 of the screen */}

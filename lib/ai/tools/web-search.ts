@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { webSearchResponseSchema, type WebSearchResponse } from '@/lib/schemas';
 
 export const webSearch = tool({
   description:
@@ -7,9 +8,11 @@ export const webSearch = tool({
   inputSchema: z.object({
     query: z.string().describe('The search query to look up on the web'),
   }),
-  execute: async ({ query }) => {
+  outputSchema: webSearchResponseSchema,
+  execute: async ({ query }): Promise<WebSearchResponse> => {
     if (!process.env.SERPER_API_KEY) {
       return {
+        query,
         error: 'Serper API key not configured',
         results: [],
       };
@@ -50,8 +53,8 @@ export const webSearch = tool({
     } catch (error) {
       console.error('Web search error:', error);
       return {
-        error: 'Failed to perform web search',
         query,
+        error: 'Failed to perform web search',
         results: [],
       };
     }

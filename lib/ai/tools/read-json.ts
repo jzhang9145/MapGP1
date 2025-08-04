@@ -1,5 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import {
+  jsonReaderResponseSchema,
+  type JsonReaderResponse,
+} from '@/lib/schemas';
 
 export const readJSON = tool({
   description:
@@ -11,7 +15,8 @@ export const readJSON = tool({
       .optional()
       .describe('Specific fields to extract from the JSON (optional)'),
   }),
-  execute: async ({ url, extractFields }) => {
+  outputSchema: jsonReaderResponseSchema,
+  execute: async ({ url, extractFields }): Promise<JsonReaderResponse> => {
     try {
       // Fetch the JSON file
       const response = await fetch(url, {

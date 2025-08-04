@@ -6,6 +6,10 @@ import type { Suggestion } from '@/lib/db/schema';
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';
 import type { ChatMessage } from '@/lib/types';
+import {
+  suggestionsResponseSchema,
+  type SuggestionsResponse,
+} from '@/lib/schemas';
 
 interface RequestSuggestionsProps {
   session: Session;
@@ -23,11 +27,16 @@ export const requestSuggestions = ({
         .string()
         .describe('The ID of the document to request edits'),
     }),
-    execute: async ({ documentId }) => {
+    outputSchema: suggestionsResponseSchema,
+    execute: async ({ documentId }): Promise<SuggestionsResponse> => {
       const document = await getDocumentById({ id: documentId });
 
       if (!document || !document.content) {
         return {
+          id: documentId,
+          title: '',
+          kind: '',
+          message: '',
           error: 'Document not found',
         };
       }

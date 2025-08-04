@@ -4,6 +4,10 @@ import { z } from 'zod';
 import { getDocumentById } from '@/lib/db/queries';
 import { documentHandlersByArtifactKind } from '@/lib/artifacts/server';
 import type { ChatMessage } from '@/lib/types';
+import {
+  documentUpdateResponseSchema,
+  type DocumentUpdateResponse,
+} from '@/lib/schemas';
 
 interface UpdateDocumentProps {
   session: Session;
@@ -19,11 +23,16 @@ export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
         .string()
         .describe('The description of changes that need to be made'),
     }),
-    execute: async ({ id, description }) => {
+    outputSchema: documentUpdateResponseSchema,
+    execute: async ({ id, description }): Promise<DocumentUpdateResponse> => {
       const document = await getDocumentById({ id });
 
       if (!document) {
         return {
+          id,
+          title: '',
+          kind: '',
+          content: '',
           error: 'Document not found',
         };
       }

@@ -1,5 +1,6 @@
-// Export all NYC neighborhoods schemas
+// Export all schemas
 export * from './nyc-neighborhoods';
-
-// Future schemas can be added here
-// export * from './other-schemas';
+export * from './weather';
+export * from './web-search';
+export * from './json-reader';
+export * from './document';

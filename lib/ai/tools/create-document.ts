@@ -7,6 +7,7 @@ import {
   documentHandlersByArtifactKind,
 } from '@/lib/artifacts/server';
 import type { ChatMessage } from '@/lib/types';
+import { documentCreationResponseSchema, type DocumentCreationResponse } from '@/lib/schemas';
 
 interface CreateDocumentProps {
   session: Session;
@@ -21,7 +22,8 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
       title: z.string(),
       kind: z.enum(artifactKinds),
     }),
-    execute: async ({ title, kind }) => {
+    outputSchema: documentCreationResponseSchema,
+    execute: async ({ title, kind }): Promise<DocumentCreationResponse> => {
       const id = generateUUID();
 
       dataStream.write({

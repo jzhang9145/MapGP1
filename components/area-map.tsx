@@ -25,6 +25,12 @@ const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), {
   ssr: false,
 });
 
+// Add GeoJSON layer support
+const GeoJSON = dynamic(
+  () => import('react-leaflet').then((mod) => mod.GeoJSON),
+  { ssr: false },
+);
+
 interface AreaMapProps {
   chatId: string;
   area?: {
@@ -66,28 +72,10 @@ export function AreaMap({ chatId, area: initialArea }: AreaMapProps) {
   // Use the area from the hook if available, otherwise fall back to the initial area
   const currentArea = area || initialArea;
 
-  // Extract coordinates from GeoJSON
-  let latitude = DEFAULT_LATITUDE;
-  let longitude = DEFAULT_LONGITUDE;
+  // Use default coordinates and zoom
+  const latitude = DEFAULT_LATITUDE;
+  const longitude = DEFAULT_LONGITUDE;
   const zoom = DEFAULT_ZOOM;
-
-  if (currentArea?.geojson) {
-    const geojson = currentArea.geojson;
-    if (geojson.type === 'Point') {
-      [longitude, latitude] = geojson.coordinates;
-    } else if (
-      geojson.type === 'Feature' &&
-      geojson.geometry?.type === 'Point'
-    ) {
-      [longitude, latitude] = geojson.geometry.coordinates;
-    } else if (
-      geojson.type === 'FeatureCollection' &&
-      geojson.features?.[0]?.geometry?.type === 'Point'
-    ) {
-      [longitude, latitude] = geojson.features[0].geometry.coordinates;
-    }
-    // For polygons, we could calculate the centroid, but for now use default coordinates
-  }
 
   const name = currentArea?.name || 'New York City';
   const summary =
@@ -115,14 +103,43 @@ export function AreaMap({ chatId, area: initialArea }: AreaMapProps) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
-          <Marker position={[latitude, longitude]}>
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold text-sm">{name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{summary}</p>
-              </div>
-            </Popup>
-          </Marker>
+
+          {/* Render GeoJSON data as-is without any manipulation */}
+          {currentArea?.geojson && (
+            <GeoJSON
+              data={currentArea.geojson}
+              style={{
+                color: '#3b82f6',
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.2,
+              }}
+              pointToLayer={(feature, latlng) => {
+                // Custom marker for points
+                return new (window as any).L.CircleMarker(latlng, {
+                  radius: 6,
+                  fillColor: '#3b82f6',
+                  color: '#1d4ed8',
+                  weight: 2,
+                  opacity: 1,
+                  fillOpacity: 0.8,
+                });
+              }}
+              onEachFeature={(feature, layer) => {
+                // Add popup for each feature using the data as-is
+                if (feature.properties) {
+                  const popupContent = `
+                    <div class="p-2">
+                      <h3 class="font-semibold text-sm">${feature.properties.name || name}</h3>
+                      <p class="text-xs text-muted-foreground mt-1">${feature.properties.borough || ''}</p>
+                    </div>
+                  `;
+                  layer.bindPopup(popupContent);
+                }
+              }}
+            />
+          )}
         </MapContainer>
       </div>
     </Card>

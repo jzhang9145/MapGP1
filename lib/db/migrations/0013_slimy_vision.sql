@@ -1,0 +1,1 @@
+ALTER TABLE "NYCNeighborhoods" ADD COLUMN "geometry" json;

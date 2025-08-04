@@ -1,0 +1,1 @@
+ALTER TABLE "NYCNeighborhoods" DROP COLUMN IF EXISTS "geometry";

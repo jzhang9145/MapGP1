@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { nycNeighborhoods } from '../lib/db/schema';
+import { nycNeighborhoods, geojsonData } from '../lib/db/schema';
 
 // Database connection
 const client = postgres(
@@ -95,6 +95,32 @@ async function populateNYCNeighborhoods() {
         // Calculate center point from geometry
         const center = await calculateCenterPoint(item.the_geom?.coordinates);
 
+        // Store geometry data in GeoJSONData table first
+        let geojsonDataId: string | null = null;
+        if (item.the_geom) {
+          try {
+            const geoData = await db
+              .insert(geojsonData)
+              .values({
+                data: item.the_geom,
+                metadata: {
+                  type: 'nyc_neighborhood_geometry',
+                  neighborhood: item.ntaname,
+                  borough: item.boroname,
+                  nta_code: item.nta2020,
+                  source: 'NY Open Data',
+                },
+              })
+              .returning();
+            geojsonDataId = geoData[0]?.id || null;
+          } catch (error) {
+            console.warn(
+              `Failed to store geometry for ${item.ntaname}:`,
+              error,
+            );
+          }
+        }
+
         // Insert neighborhood data
         await db.insert(nycNeighborhoods).values({
           name: item.ntaname || 'Unknown',
@@ -108,7 +134,7 @@ async function populateNYCNeighborhoods() {
           center_longitude: center.longitude,
           shape_area: item.shape_area || null,
           shape_leng: item.shape_leng || null,
-          geojsonDataId: null, // Will be populated separately if needed
+          geojsonDataId: geojsonDataId,
         });
 
         insertedCount++;

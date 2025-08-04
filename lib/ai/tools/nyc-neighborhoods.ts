@@ -5,6 +5,7 @@ import {
   getNYCNeighborhoodsByBorough,
   searchNYCNeighborhoods,
   createGeoJSONData,
+  getGeoJSONDataById,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import { neighborhoodDataSchema, type NeighborhoodData } from '@/lib/schemas';
@@ -83,29 +84,50 @@ export const nycNeighborhoods = tool({
       }
 
       // Create GeoJSON feature collection for multiple results
-      const features = limitedNeighborhoods.map((item) => ({
-        type: 'Feature' as const,
-        properties: {
-          name: item.name,
-          borough: item.borough,
-          nta_code: item.nta_code,
-          nta_2020: item.nta_2020,
-          cdtca: item.cdtca,
-          cdtca_name: item.cdtca_name,
-          center_lat: Number(item.center_latitude),
-          center_lng: Number(item.center_longitude),
-          geojsonDataId: item.geojsonDataId,
-          shape_area: item.shape_area,
-          shape_leng: item.shape_leng,
-        },
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [
-            Number(item.center_longitude),
-            Number(item.center_latitude),
-          ] as [number, number],
-        },
-      }));
+      const features = await Promise.all(
+        limitedNeighborhoods.map(async (item) => {
+          let geometry = {
+            // Fallback to point if no geometry stored
+            type: 'Point' as const,
+            coordinates: [
+              Number(item.center_longitude),
+              Number(item.center_latitude),
+            ] as [number, number],
+          };
+
+          // Try to get geometry from GeoJSONData table
+          if (item.geojsonDataId) {
+            try {
+              const geojsonData = await getGeoJSONDataById({
+                id: item.geojsonDataId,
+              });
+              if (geojsonData?.[0]?.data) {
+                geometry = geojsonData[0].data as any;
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch geometry for ${item.name}:`, error);
+            }
+          }
+
+          return {
+            type: 'Feature' as const,
+            properties: {
+              name: item.name,
+              borough: item.borough,
+              nta_code: item.nta_code,
+              nta_2020: item.nta_2020,
+              cdtca: item.cdtca,
+              cdtca_name: item.cdtca_name,
+              center_lat: Number(item.center_latitude),
+              center_lng: Number(item.center_longitude),
+              geojsonDataId: item.geojsonDataId,
+              shape_area: item.shape_area,
+              shape_leng: item.shape_leng,
+            },
+            geometry: geometry,
+          };
+        }),
+      );
 
       const geojson = {
         type: 'FeatureCollection' as const,

@@ -25,6 +25,7 @@ import {
   ReadJSONTool,
   NYCNeighborhoodsTool,
   UpdateAreaTool,
+  PlutoTool,
 } from './tool-messages';
 
 // Type narrowing is handled by TypeScript's control flow analysis
@@ -278,6 +279,20 @@ const PurePreviewMessage = ({
                 const output = 'output' in part ? part.output : undefined;
                 return (
                   <UpdateAreaTool
+                    key={toolCallId}
+                    toolCallId={toolCallId}
+                    state={state}
+                    input={input}
+                    output={output}
+                  />
+                );
+              }
+
+              if (type === 'tool-pluto') {
+                const { toolCallId, state, input } = part;
+                const output = 'output' in part ? part.output : undefined;
+                return (
+                  <PlutoTool
                     key={toolCallId}
                     toolCallId={toolCallId}
                     state={state}

@@ -11,6 +11,7 @@ import type { Suggestion } from './db/schema';
 import type { webSearch } from './ai/tools/web-search';
 import type { readJSON } from './ai/tools/read-json';
 import type { nycNeighborhoods } from './ai/tools/nyc-neighborhoods';
+import type { pluto } from './ai/tools/pluto';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -30,6 +31,7 @@ type updateAreaToolType = InferUITool<ReturnType<typeof updateAreaTool>>;
 type webSearchTool = InferUITool<typeof webSearch>;
 type readJSONTool = InferUITool<typeof readJSON>;
 type nycNeighborhoodsTool = InferUITool<typeof nycNeighborhoods>;
+type plutoTool = InferUITool<typeof pluto>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -41,6 +43,7 @@ export type ChatTools = {
   updateArea: updateAreaToolType;
   readJSON: readJSONTool;
   nycNeighborhoods: nycNeighborhoodsTool;
+  pluto: plutoTool;
 };
 
 export type CustomUIDataTypes = {

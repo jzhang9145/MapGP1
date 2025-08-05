@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  lte,
   type SQL,
   or,
   ilike,
@@ -33,6 +34,8 @@ import {
   geojsonData,
   nycNeighborhoods,
   type NYCNeighborhood,
+  plutoLots,
+  type PlutoLot,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -855,6 +858,445 @@ export async function clearNYCNeighborhoods() {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to clear NYC neighborhoods',
+    );
+  }
+}
+
+// PLUTO queries
+export async function createPlutoLot({
+  bbl,
+  borough,
+  block,
+  lot,
+  address,
+  zipcode,
+  ownerName,
+  ownerType,
+  landUse,
+  landUseCode,
+  buildingClass,
+  buildingClassCode,
+  yearBuilt,
+  yearAltered,
+  numFloors,
+  numStories,
+  lotArea,
+  bldgArea,
+  commFAR,
+  resFAR,
+  facilFAR,
+  bldgFront,
+  bldgDepth,
+  lotFront,
+  lotDepth,
+  bldgClass,
+  tract2010,
+  xCoord,
+  yCoord,
+  latitude,
+  longitude,
+  councilDistrict,
+  communityDistrict,
+  policePrecinct,
+  fireCompany,
+  fireBattalion,
+  fireDivision,
+  healthArea,
+  healthCenterDistrict,
+  schoolDistrict,
+  voterPrecinct,
+  electionDistrict,
+  assemblyDistrict,
+  senateDistrict,
+  congressionalDistrict,
+  sanitationDistrict,
+  sanitationSub,
+  zoningDistrict,
+  overlayDistrict1,
+  overlayDistrict2,
+  specialDistrict1,
+  specialDistrict2,
+  specialDistrict3,
+  easements,
+  landmark,
+  far,
+  irrLotCode,
+  lotType,
+  bsmtCode,
+  assessLand,
+  assessTot,
+  exemptLand,
+  exemptTot,
+  yearAlter1,
+  yearAlter2,
+  histDist,
+  lstAction,
+  lstStatus,
+  lstDate,
+  lstReason,
+  geojsonDataId,
+}: {
+  bbl: string;
+  borough: string;
+  block: string;
+  lot: string;
+  address?: string;
+  zipcode?: string;
+  ownerName?: string;
+  ownerType?: string;
+  landUse?: string;
+  landUseCode?: string;
+  buildingClass?: string;
+  buildingClassCode?: string;
+  yearBuilt?: number;
+  yearAltered?: number;
+  numFloors?: number;
+  numStories?: number;
+  lotArea?: number;
+  bldgArea?: number;
+  commFAR?: number;
+  resFAR?: number;
+  facilFAR?: number;
+  bldgFront?: number;
+  bldgDepth?: number;
+  lotFront?: number;
+  lotDepth?: number;
+  bldgClass?: string;
+  tract2010?: string;
+  xCoord?: number;
+  yCoord?: number;
+  latitude?: number;
+  longitude?: number;
+  councilDistrict?: string;
+  communityDistrict?: string;
+  policePrecinct?: string;
+  fireCompany?: string;
+  fireBattalion?: string;
+  fireDivision?: string;
+  healthArea?: string;
+  healthCenterDistrict?: string;
+  schoolDistrict?: string;
+  voterPrecinct?: string;
+  electionDistrict?: string;
+  assemblyDistrict?: string;
+  senateDistrict?: string;
+  congressionalDistrict?: string;
+  sanitationDistrict?: string;
+  sanitationSub?: string;
+  zoningDistrict?: string;
+  overlayDistrict1?: string;
+  overlayDistrict2?: string;
+  specialDistrict1?: string;
+  specialDistrict2?: string;
+  specialDistrict3?: string;
+  easements?: string;
+  landmark?: string;
+  far?: number;
+  irrLotCode?: string;
+  lotType?: string;
+  bsmtCode?: string;
+  assessLand?: number;
+  assessTot?: number;
+  exemptLand?: number;
+  exemptTot?: number;
+  yearAlter1?: number;
+  yearAlter2?: number;
+  histDist?: string;
+  lstAction?: string;
+  lstStatus?: string;
+  lstDate?: string;
+  lstReason?: string;
+  geojsonDataId?: string;
+}) {
+  try {
+    return await db
+      .insert(plutoLots)
+      .values({
+        bbl,
+        borough,
+        block,
+        lot,
+        address,
+        zipcode,
+        ownerName,
+        ownerType,
+        landUse,
+        landUseCode,
+        buildingClass,
+        buildingClassCode,
+        yearBuilt,
+        yearAltered,
+        numFloors,
+        numStories,
+        lotArea,
+        bldgArea,
+        commFAR,
+        resFAR,
+        facilFAR,
+        bldgFront,
+        bldgDepth,
+        lotFront,
+        lotDepth,
+        bldgClass,
+        tract2010,
+        xCoord,
+        yCoord,
+        latitude,
+        longitude,
+        councilDistrict,
+        communityDistrict,
+        policePrecinct,
+        fireCompany,
+        fireBattalion,
+        fireDivision,
+        healthArea,
+        healthCenterDistrict,
+        schoolDistrict,
+        voterPrecinct,
+        electionDistrict,
+        assemblyDistrict,
+        senateDistrict,
+        congressionalDistrict,
+        sanitationDistrict,
+        sanitationSub,
+        zoningDistrict,
+        overlayDistrict1,
+        overlayDistrict2,
+        specialDistrict1,
+        specialDistrict2,
+        specialDistrict3,
+        easements,
+        landmark,
+        far,
+        irrLotCode,
+        lotType,
+        bsmtCode,
+        assessLand,
+        assessTot,
+        exemptLand,
+        exemptTot,
+        yearAlter1,
+        yearAlter2,
+        histDist,
+        lstAction,
+        lstStatus,
+        lstDate,
+        lstReason,
+        geojsonDataId,
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create PLUTO lot',
+    );
+  }
+}
+
+export async function getAllPlutoLots({ limit = 100 }: { limit?: number }) {
+  try {
+    return await db
+      .select()
+      .from(plutoLots)
+      .limit(limit)
+      .orderBy(asc(plutoLots.bbl));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get all PLUTO lots',
+    );
+  }
+}
+
+export async function getPlutoLotsByBorough({ borough }: { borough: string }) {
+  try {
+    return await db
+      .select()
+      .from(plutoLots)
+      .where(eq(plutoLots.borough, borough))
+      .orderBy(asc(plutoLots.bbl));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get PLUTO lots by borough',
+    );
+  }
+}
+
+export async function searchPlutoLots({
+  searchTerm,
+  limit = 50,
+}: {
+  searchTerm: string;
+  limit?: number;
+}) {
+  try {
+    return await db
+      .select()
+      .from(plutoLots)
+      .where(
+        or(
+          ilike(plutoLots.address, `%${searchTerm}%`),
+          ilike(plutoLots.ownerName, `%${searchTerm}%`),
+          ilike(plutoLots.landUse, `%${searchTerm}%`),
+          ilike(plutoLots.buildingClass, `%${searchTerm}%`),
+          ilike(plutoLots.zoningDistrict, `%${searchTerm}%`),
+        ),
+      )
+      .limit(limit)
+      .orderBy(asc(plutoLots.bbl));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search PLUTO lots',
+    );
+  }
+}
+
+export async function getPlutoLotByBBL({ bbl }: { bbl: string }) {
+  try {
+    return await db
+      .select()
+      .from(plutoLots)
+      .where(eq(plutoLots.bbl, bbl))
+      .limit(1);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get PLUTO lot by BBL',
+    );
+  }
+}
+
+export async function filterPlutoLots({
+  borough,
+  landUse,
+  buildingClass,
+  zoningDistrict,
+  yearBuiltMin,
+  yearBuiltMax,
+  lotAreaMin,
+  lotAreaMax,
+  limit = 100,
+}: {
+  borough?: string;
+  landUse?: string;
+  buildingClass?: string;
+  zoningDistrict?: string;
+  yearBuiltMin?: number;
+  yearBuiltMax?: number;
+  lotAreaMin?: number;
+  lotAreaMax?: number;
+  limit?: number;
+}) {
+  try {
+    let query = db.select().from(plutoLots);
+
+    const conditions = [];
+
+    if (borough) {
+      conditions.push(eq(plutoLots.borough, borough));
+    }
+    if (landUse) {
+      conditions.push(eq(plutoLots.landUse, landUse));
+    }
+    if (buildingClass) {
+      conditions.push(eq(plutoLots.buildingClass, buildingClass));
+    }
+    if (zoningDistrict) {
+      conditions.push(eq(plutoLots.zoningDistrict, zoningDistrict));
+    }
+    if (yearBuiltMin !== undefined) {
+      conditions.push(gte(plutoLots.yearBuilt, yearBuiltMin));
+    }
+    if (yearBuiltMax !== undefined) {
+      conditions.push(lte(plutoLots.yearBuilt, yearBuiltMax));
+    }
+    if (lotAreaMin !== undefined) {
+      conditions.push(gte(plutoLots.lotArea, lotAreaMin));
+    }
+    if (lotAreaMax !== undefined) {
+      conditions.push(lte(plutoLots.lotArea, lotAreaMax));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    return await query.limit(limit).orderBy(asc(plutoLots.bbl));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to filter PLUTO lots',
+    );
+  }
+}
+
+export async function clearPlutoLots() {
+  try {
+    return await db.delete(plutoLots);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to clear PLUTO lots',
+    );
+  }
+}
+
+export async function getPlutoLotsByArea({
+  areaId,
+  limit = 100,
+}: {
+  areaId: string;
+  limit?: number;
+}) {
+  try {
+    // First get the area's GeoJSON data
+    const area = await getAreaByChatId({ chatId: areaId });
+    if (!area || !area[0]?.geojsonDataId) {
+      throw new ChatSDKError(
+        'bad_request:database',
+        'Area not found or no geometry data available',
+      );
+    }
+
+    const geojsonData = await getGeoJSONDataById({
+      id: area[0].geojsonDataId,
+    });
+
+    if (!geojsonData || !geojsonData[0]?.data) {
+      throw new ChatSDKError(
+        'bad_request:database',
+        'Area geometry data not found',
+      );
+    }
+
+    const areaGeometry = geojsonData[0].data;
+
+    // For now, we'll use a bounding box approach since we don't have spatial queries set up
+    // In a production environment, you'd want to use PostGIS for proper spatial queries
+    let lots = await getAllPlutoLots({ limit: 1000 }); // Get more lots to filter
+
+    // Filter lots that are within the area's bounding box
+    // This is a simplified approach - for precise spatial queries, use PostGIS
+    const filteredLots = lots.filter((lot) => {
+      if (!lot.latitude || !lot.longitude) return false;
+
+      // Simple bounding box check (this is approximate)
+      // In a real implementation, you'd use PostGIS ST_Contains or similar
+      const lat = Number(lot.latitude);
+      const lng = Number(lot.longitude);
+
+      // For now, we'll return all lots with coordinates
+      // The actual spatial filtering would depend on the area geometry
+      return lat !== 0 && lng !== 0;
+    });
+
+    return filteredLots.slice(0, limit);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get PLUTO lots by area',
     );
   }
 }

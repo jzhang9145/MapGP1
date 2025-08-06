@@ -3,7 +3,7 @@ import {
   extractReasoningMiddleware,
   wrapLanguageModel,
 } from 'ai';
-import { xai } from '@ai-sdk/xai';
+import { openai } from '@ai-sdk/openai';
 import {
   artifactModel,
   chatModel,
@@ -12,26 +12,28 @@ import {
 } from './models.test';
 import { isTestEnvironment } from '../constants';
 
-export const myProvider = isTestEnvironment
-  ? customProvider({
-      languageModels: {
-        'chat-model': chatModel,
-        'chat-model-reasoning': reasoningModel,
-        'title-model': titleModel,
-        'artifact-model': artifactModel,
-      },
-    })
-  : customProvider({
-      languageModels: {
-        'chat-model': xai('grok-2-vision-1212'),
-        'chat-model-reasoning': wrapLanguageModel({
-          model: xai('grok-3-mini-beta'),
-          middleware: extractReasoningMiddleware({ tagName: 'think' }),
-        }),
-        'title-model': xai('grok-2-1212'),
-        'artifact-model': xai('grok-2-1212'),
-      },
-      imageModels: {
-        'small-model': xai.imageModel('grok-2-image'),
-      },
-    });
+// Create individual model instances with type assertions for compatibility
+const chatModelInstance = isTestEnvironment
+  ? chatModel
+  : (openai('gpt-4o') as any);
+const reasoningModelInstance = isTestEnvironment
+  ? reasoningModel
+  : (wrapLanguageModel({
+      model: openai('o1-mini') as any,
+      middleware: extractReasoningMiddleware({ tagName: 'think' }),
+    }) as any);
+const titleModelInstance = isTestEnvironment
+  ? titleModel
+  : (openai('gpt-4o-mini') as any);
+const artifactModelInstance = isTestEnvironment
+  ? artifactModel
+  : (openai('gpt-4o') as any);
+
+export const myProvider = customProvider({
+  languageModels: {
+    'chat-model': chatModelInstance,
+    'chat-model-reasoning': reasoningModelInstance,
+    'title-model': titleModelInstance,
+    'artifact-model': artifactModelInstance,
+  },
+});

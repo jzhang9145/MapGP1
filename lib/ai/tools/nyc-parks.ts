@@ -38,10 +38,21 @@ export const nycParks = tool({
         limit,
       });
 
+      // Convert full borough names to codes used in the database
+      const boroughCodeMap: Record<string, string> = {
+        'Manhattan': 'M',
+        'Bronx': 'X', 
+        'Brooklyn': 'B',
+        'Queens': 'Q',
+        'Staten Island': 'R',
+      };
+      
+      const boroughCode = borough ? boroughCodeMap[borough] : undefined;
+
       // Get parks with GeoJSON data
       const parks = await getNYCParksWithGeoJSON({
         searchTerm,
-        borough,
+        borough: boroughCode,
         limit,
       });
 

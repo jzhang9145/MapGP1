@@ -26,6 +26,7 @@ import {
   NYCNeighborhoodsTool,
   NYCSchoolZonesTool,
   NYCParksTool,
+  SpatialAnalysisTool,
   UpdateAreaTool,
   PlutoTool,
 } from './tool-messages';
@@ -295,6 +296,20 @@ const PurePreviewMessage = ({
                 const output = 'output' in part ? part.output : undefined;
                 return (
                   <NYCParksTool
+                    key={toolCallId}
+                    toolCallId={toolCallId}
+                    state={state}
+                    input={input}
+                    output={output}
+                  />
+                );
+              }
+
+              if (type === 'tool-spatialAnalysis') {
+                const { toolCallId, state, input } = part;
+                const output = 'output' in part ? part.output : undefined;
+                return (
+                  <SpatialAnalysisTool
                     key={toolCallId}
                     toolCallId={toolCallId}
                     state={state}

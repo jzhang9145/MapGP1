@@ -40,7 +40,7 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
           <div className="text-gray-800 font-medium">No Results Found</div>
         </div>
         <div className="text-gray-700 text-sm">
-          No search results found for "{webSearchData.query}"
+          No search results found for &quot;{webSearchData.query}&quot;
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
       </div>
 
       <div className="text-blue-700 text-sm font-medium">
-        Query: "{webSearchData.query}"
+        Query: &quot;{webSearchData.query}&quot;
       </div>
 
       <div className="flex flex-col gap-3">

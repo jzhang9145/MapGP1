@@ -28,6 +28,7 @@ import { readJSON } from '@/lib/ai/tools/read-json';
 import { nycNeighborhoods } from '@/lib/ai/tools/nyc-neighborhoods';
 import { nycSchoolZones } from '@/lib/ai/tools/nyc-school-zones';
 import { nycParks } from '@/lib/ai/tools/nyc-parks';
+import { spatialAnalysis } from '@/lib/ai/tools/spatial-analysis';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -178,6 +179,7 @@ export async function POST(request: Request) {
                   'nycNeighborhoods',
                   'nycSchoolZones',
                   'nycParks',
+                  'spatialAnalysis',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -198,6 +200,7 @@ export async function POST(request: Request) {
             nycNeighborhoods,
             nycSchoolZones,
             nycParks,
+            spatialAnalysis,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

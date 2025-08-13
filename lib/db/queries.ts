@@ -14,6 +14,7 @@ import {
   type SQL,
   or,
   ilike,
+  sql,
 } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -1421,6 +1422,60 @@ export async function getNYCSchoolZoneByDbn({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get NYC school zone by DBN',
+    );
+  }
+}
+
+export async function getNYCSchoolZonesWithGeoJSON({
+  searchTerm,
+  borough,
+  limit = 100,
+}: {
+  searchTerm?: string;
+  borough?: string;
+  limit?: number;
+} = {}) {
+  try {
+    let query = db
+      .select({
+        id: nycSchoolZones.id,
+        dbn: nycSchoolZones.dbn,
+        schoolName: nycSchoolZones.schoolName,
+        label: nycSchoolZones.label,
+        borough: nycSchoolZones.borough,
+        schoolDistrict: nycSchoolZones.schoolDistrict,
+        geojson: geojsonData.data,
+      })
+      .from(nycSchoolZones)
+      .leftJoin(geojsonData, eq(nycSchoolZones.geojsonDataId, geojsonData.id));
+
+    const conditions = [];
+
+    if (searchTerm) {
+      conditions.push(
+        or(
+          sql`LOWER(${nycSchoolZones.schoolName}) LIKE LOWER(${`%${searchTerm}%`})`,
+          sql`LOWER(${nycSchoolZones.dbn}) LIKE LOWER(${`%${searchTerm}%`})`,
+          sql`LOWER(${nycSchoolZones.label}) LIKE LOWER(${`%${searchTerm}%`})`
+        )
+      );
+    }
+
+    if (borough) {
+      conditions.push(eq(nycSchoolZones.borough, borough));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const schoolZones = await query.limit(limit);
+
+    return schoolZones.filter(zone => zone.geojson);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC school zones with GeoJSON',
     );
   }
 }

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { useArea } from '@/hooks/use-area';
 import { useSchoolZonesFromMessages } from '@/hooks/use-school-zones';
 import { useParksFromMessages } from '@/hooks/use-parks';
+import { useSpatialAnalysisFromMessages } from '@/hooks/use-spatial-analysis';
 import type { ChatMessage } from '@/lib/types';
 
 // Dynamically import the map components to avoid SSR issues
@@ -49,6 +50,7 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
   const { area, isLoading } = useArea(chatId);
   const { schoolZones, isVisible: schoolZonesVisible } = useSchoolZonesFromMessages(messages, chatId);
   const { parks, isVisible: parksVisible } = useParksFromMessages(messages, chatId);
+  const { spatialResults, isVisible: spatialResultsVisible } = useSpatialAnalysisFromMessages(messages, chatId);
 
   useEffect(() => {
     setIsClient(true);
@@ -229,6 +231,47 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
               />
             )
           ))}
+
+          {/* Spatial Analysis Results Layer - Various colors based on layer type */}
+          {spatialResultsVisible && spatialResults.map((result) => (
+            result.geojson && (
+              <GeoJSON
+                key={`spatial-${result.layerType}-${result.id}`}
+                data={result.geojson}
+                style={{
+                  color: getSpatialResultColor(result.layerType),
+                  weight: 3,
+                  opacity: 0.9,
+                  fillColor: getSpatialResultColor(result.layerType),
+                  fillOpacity: 0.4,
+                  dashArray: '5, 10', // Dashed line to distinguish spatial results
+                }}
+                onEachFeature={(feature, layer) => {
+                  const name = getSpatialResultName(result);
+                  const popupContent = `
+                    <div class="p-3 min-w-[200px]">
+                      <h3 class="font-semibold text-sm mb-1" style="color: ${getSpatialResultColor(result.layerType)}">
+                        🗺️ ${name}
+                      </h3>
+                      <div class="text-xs text-gray-600 mb-2">
+                        Spatial Analysis Result
+                      </div>
+                      <div class="space-y-1 text-xs">
+                        <div><strong>Query:</strong> ${result.analysisQuery || 'Spatial search'}</div>
+                        <div><strong>Relation:</strong> ${result.spatialRelation} ${result.filterDescription}</div>
+                        <div><strong>Layer:</strong> ${getLayerDisplayName(result.layerType)}</div>
+                        ${result.borough ? `<div><strong>Borough:</strong> ${getBoroughDisplayName(result.borough)}</div>` : ''}
+                        ${result.address ? `<div><strong>Address:</strong> ${result.address}</div>` : ''}
+                        ${result.acreage ? `<div><strong>Size:</strong> ${result.acreage} acres</div>` : ''}
+                        ${result.schoolDistrict ? `<div><strong>School District:</strong> ${result.schoolDistrict}</div>` : ''}
+                      </div>
+                    </div>
+                  `;
+                  layer.bindPopup(popupContent);
+                }}
+              />
+            )
+          ))}
         </MapContainer>
       </div>
     </Card>
@@ -257,6 +300,7 @@ function getBoroughDisplayName(borough: string): string {
     '5': 'Staten Island',
     'M': 'Manhattan',
     'X': 'Bronx',
+    'B': 'Brooklyn',
     'K': 'Brooklyn',
     'Q': 'Queens',
     'R': 'Staten Island',
@@ -268,4 +312,36 @@ function getBoroughDisplayName(borough: string): string {
   };
   
   return boroughMap[borough] || borough;
+}
+
+// Helper function to get colors for spatial analysis results
+function getSpatialResultColor(layerType: string): string {
+  const colorMap: Record<string, string> = {
+    parks: '#dc2626', // Red for parks in spatial results
+    neighborhoods: '#ea580c', // Orange for neighborhoods
+    schoolZones: '#7c3aed', // Purple for school zones
+  };
+  return colorMap[layerType] || '#6366f1'; // Default indigo
+}
+
+// Helper function to get names for spatial results
+function getSpatialResultName(result: any): string {
+  if (result.layerType === 'parks') {
+    return result.name || result.signname || 'Unnamed Park';
+  } else if (result.layerType === 'neighborhoods') {
+    return result.name || 'Unnamed Neighborhood';
+  } else if (result.layerType === 'schoolZones') {
+    return result.schoolName || result.dbn || result.label || 'School Zone';
+  }
+  return 'Spatial Result';
+}
+
+// Helper function to get layer display names
+function getLayerDisplayName(layerType: string): string {
+  const nameMap: Record<string, string> = {
+    parks: 'Park',
+    neighborhoods: 'Neighborhood',
+    schoolZones: 'School Zone',
+  };
+  return nameMap[layerType] || layerType;
 }

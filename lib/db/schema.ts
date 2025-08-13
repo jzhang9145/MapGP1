@@ -304,6 +304,62 @@ export const plutoLots = pgTable('PlutoLots', {
 
 export type PlutoLot = InferSelectModel<typeof plutoLots>;
 
+// NYC Elementary School Zones table to store school district boundaries
+export const nycSchoolZones = pgTable('NYCSchoolZones', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  dbn: varchar('dbn', { length: 50 }).notNull(), // District Borough Number (e.g., "20K503")
+  schoolName: varchar('schoolName', { length: 255 }),
+  schoolDistrict: varchar('schoolDistrict', { length: 10 }).notNull(),
+  borough: varchar('borough', { length: 1 }).notNull(), // K, M, Q, X, R
+  boroNum: varchar('boroNum', { length: 1 }).notNull(),
+  label: varchar('label', { length: 100 }),
+  initials: varchar('initials', { length: 10 }),
+  zonedDist: varchar('zonedDist', { length: 10 }),
+  esidNo: varchar('esidNo', { length: 20 }),
+  shapeArea: varchar('shapeArea', { length: 50 }),
+  shapeLength: varchar('shapeLength', { length: 50 }),
+  xCentroid: decimal('xCentroid', { precision: 15, scale: 8 }),
+  yCentroid: decimal('yCentroid', { precision: 15, scale: 8 }),
+  remarks: text('remarks'),
+  createDate: timestamp('createDate'),
+  editDate: timestamp('editDate'),
+  geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type NYCSchoolZone = InferSelectModel<typeof nycSchoolZones>;
+
+// NYC Parks table to store park boundaries and information
+export const nycParks = pgTable('NYCParks', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  gispropnum: varchar('gispropnum', { length: 50 }), // GIS Property Number
+  name: varchar('name', { length: 255 }), // Park name
+  signname: varchar('signname', { length: 255 }), // Sign name
+  borough: varchar('borough', { length: 50 }), // Borough name
+  borocode: varchar('borocode', { length: 2 }), // Borough code (1-5)
+  communityboard: varchar('communityboard', { length: 10 }), // Community board
+  councildistrict: varchar('councildistrict', { length: 10 }), // Council district
+  policepreinct: varchar('policepreinct', { length: 10 }), // Police precinct
+  assemblydistrict: varchar('assemblydistrict', { length: 10 }), // Assembly district
+  congressionaldistrict: varchar('congressionaldistrict', { length: 10 }), // Congressional district
+  senateDistrict: varchar('senateDistrict', { length: 10 }), // Senate district
+  zipcode: varchar('zipcode', { length: 20 }), // ZIP codes
+  address: varchar('address', { length: 500 }), // Address
+  acreage: varchar('acreage', { length: 20 }), // Park acreage
+  typecategory: varchar('typecategory', { length: 100 }), // Type category
+  landuse: varchar('landuse', { length: 100 }), // Land use
+  department: varchar('department', { length: 100 }), // Managing department
+  jurisdiction: varchar('jurisdiction', { length: 100 }), // Jurisdiction
+  retired: varchar('retired', { length: 10 }), // Retired status
+  waterfront: varchar('waterfront', { length: 10 }), // Waterfront designation
+  geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
+  createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NYCPark = InferSelectModel<typeof nycParks>;
+
 // GeoJSON types for area data
 export interface GeoJSONPoint {
   type: 'Point';

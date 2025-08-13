@@ -36,6 +36,10 @@ import {
   type NYCNeighborhood,
   plutoLots,
   type PlutoLot,
+  nycSchoolZones,
+  type NYCSchoolZone,
+  nycParks,
+  type NYCPark,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -212,9 +216,11 @@ export async function getChatsByUserId({
 export async function getChatById({ id }: { id: string }) {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
-    return selectedChat;
+    return selectedChat || null;
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to get chat by id');
+    console.error('Database error in getChatById:', error);
+    // Return null instead of throwing to allow graceful handling
+    return null;
   }
 }
 
@@ -1297,6 +1303,324 @@ export async function getPlutoLotsByArea({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get PLUTO lots by area',
+    );
+  }
+}
+
+// NYC School Zone functions
+export async function getAllNYCSchoolZones({
+  limit = 100,
+}: {
+  limit?: number;
+} = {}) {
+  try {
+    const zones = await db
+      .select()
+      .from(nycSchoolZones)
+      .limit(limit)
+      .orderBy(asc(nycSchoolZones.dbn));
+
+    return zones;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC school zones',
+    );
+  }
+}
+
+export async function getNYCSchoolZonesByBorough({
+  borough,
+  limit = 50,
+}: {
+  borough: string;
+  limit?: number;
+}) {
+  try {
+    const zones = await db
+      .select()
+      .from(nycSchoolZones)
+      .where(eq(nycSchoolZones.borough, borough))
+      .limit(limit)
+      .orderBy(asc(nycSchoolZones.dbn));
+
+    return zones;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC school zones by borough',
+    );
+  }
+}
+
+export async function searchNYCSchoolZones({
+  searchTerm,
+  borough,
+  district,
+  limit = 50,
+}: {
+  searchTerm?: string;
+  borough?: string;
+  district?: string;
+  limit?: number;
+}) {
+  try {
+    let query = db.select().from(nycSchoolZones);
+
+    const conditions = [];
+
+    if (searchTerm) {
+      conditions.push(
+        or(
+          ilike(nycSchoolZones.dbn, `%${searchTerm}%`),
+          ilike(nycSchoolZones.schoolName, `%${searchTerm}%`),
+          ilike(nycSchoolZones.label, `%${searchTerm}%`),
+        ),
+      );
+    }
+
+    if (borough) {
+      conditions.push(eq(nycSchoolZones.borough, borough));
+    }
+
+    if (district) {
+      conditions.push(eq(nycSchoolZones.schoolDistrict, district));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const zones = await query
+      .limit(limit)
+      .orderBy(asc(nycSchoolZones.dbn));
+
+    return zones;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search NYC school zones',
+    );
+  }
+}
+
+export async function getNYCSchoolZoneByDbn({
+  dbn,
+}: {
+  dbn: string;
+}) {
+  try {
+    const [zone] = await db
+      .select()
+      .from(nycSchoolZones)
+      .where(eq(nycSchoolZones.dbn, dbn))
+      .limit(1);
+
+    return zone;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC school zone by DBN',
+    );
+  }
+}
+
+export async function createNYCSchoolZones({
+  zones,
+}: {
+  zones: Array<Omit<NYCSchoolZone, 'id' | 'createdAt' | 'updatedAt'>>;
+}) {
+  try {
+    return await db.insert(nycSchoolZones).values(zones).returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create NYC school zones',
+    );
+  }
+}
+
+// NYC Parks functions
+export async function getAllNYCParks({
+  limit = 100,
+}: {
+  limit?: number;
+} = {}) {
+  try {
+    const parks = await db
+      .select()
+      .from(nycParks)
+      .limit(limit)
+      .orderBy(asc(nycParks.name));
+
+    return parks;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC parks',
+    );
+  }
+}
+
+export async function getNYCParksByBorough({
+  borough,
+  limit = 50,
+}: {
+  borough: string;
+  limit?: number;
+}) {
+  try {
+    const parks = await db
+      .select()
+      .from(nycParks)
+      .where(eq(nycParks.borough, borough))
+      .limit(limit)
+      .orderBy(asc(nycParks.name));
+
+    return parks;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC parks by borough',
+    );
+  }
+}
+
+export async function searchNYCParks({
+  searchTerm,
+  limit = 20,
+}: { 
+  searchTerm: string;
+  limit?: number;
+}) {
+  try {
+    const parks = await db
+      .select()
+      .from(nycParks)
+      .where(
+        or(
+          ilike(nycParks.name, `%${searchTerm}%`),
+          ilike(nycParks.signname, `%${searchTerm}%`),
+          ilike(nycParks.address, `%${searchTerm}%`),
+        )
+      )
+      .limit(limit)
+      .orderBy(asc(nycParks.name));
+
+    return parks;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search NYC parks',
+    );
+  }
+}
+
+export async function getNYCParkById({ id }: { id: string }) {
+  try {
+    return await db
+      .select()
+      .from(nycParks)
+      .where(eq(nycParks.id, id));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC park by ID',
+    );
+  }
+}
+
+export async function getNYCParksWithGeoJSON({
+  searchTerm,
+  borough,
+  limit = 10,
+}: {
+  searchTerm?: string;
+  borough?: string;
+  limit?: number;
+} = {}) {
+  try {
+    let query = db
+      .select({
+        id: nycParks.id,
+        gispropnum: nycParks.gispropnum,
+        name: nycParks.name,
+        signname: nycParks.signname,
+        borough: nycParks.borough,
+        borocode: nycParks.borocode,
+        communityboard: nycParks.communityboard,
+        councildistrict: nycParks.councildistrict,
+        address: nycParks.address,
+        acreage: nycParks.acreage,
+        typecategory: nycParks.typecategory,
+        landuse: nycParks.landuse,
+        department: nycParks.department,
+        jurisdiction: nycParks.jurisdiction,
+        retired: nycParks.retired,
+        waterfront: nycParks.waterfront,
+        geojsonDataId: nycParks.geojsonDataId,
+        createdAt: nycParks.createdAt,
+        updatedAt: nycParks.updatedAt,
+        geojson: geojsonData.data,
+      })
+      .from(nycParks)
+      .leftJoin(geojsonData, eq(nycParks.geojsonDataId, geojsonData.id));
+
+    // Add search conditions
+    if (searchTerm && borough) {
+      query = query.where(
+        and(
+          eq(nycParks.borough, borough),
+          or(
+            ilike(nycParks.name, `%${searchTerm}%`),
+            ilike(nycParks.signname, `%${searchTerm}%`),
+            ilike(nycParks.address, `%${searchTerm}%`),
+          )
+        )
+      );
+    } else if (searchTerm) {
+      query = query.where(
+        or(
+          ilike(nycParks.name, `%${searchTerm}%`),
+          ilike(nycParks.signname, `%${searchTerm}%`),
+          ilike(nycParks.address, `%${searchTerm}%`),
+        )
+      );
+    } else if (borough) {
+      query = query.where(eq(nycParks.borough, borough));
+    }
+
+    const parks = await query
+      .limit(limit)
+      .orderBy(asc(nycParks.name));
+
+    return parks;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC parks with GeoJSON',
+    );
+  }
+}
+
+export async function createNYCParks(parks: Array<Omit<NYCPark, 'id' | 'createdAt' | 'updatedAt'>>) {
+  try {
+    return await db.insert(nycParks).values(parks).returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create NYC parks',
+    );
+  }
+}
+
+export async function clearNYCParks() {
+  try {
+    return await db.delete(nycParks);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to clear NYC parks',
     );
   }
 }

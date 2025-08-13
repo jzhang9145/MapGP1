@@ -5,3 +5,5 @@ export * from './web-search';
 export * from './json-reader';
 export * from './document';
 export * from './pluto';
+export * from './school-zones';
+export * from './nyc-parks';

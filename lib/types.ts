@@ -12,6 +12,8 @@ import type { webSearch } from './ai/tools/web-search';
 import type { readJSON } from './ai/tools/read-json';
 import type { nycNeighborhoods } from './ai/tools/nyc-neighborhoods';
 import type { pluto } from './ai/tools/pluto';
+import type { nycSchoolZones } from './ai/tools/nyc-school-zones';
+import type { nycParks } from './ai/tools/nyc-parks';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -32,6 +34,8 @@ type webSearchTool = InferUITool<typeof webSearch>;
 type readJSONTool = InferUITool<typeof readJSON>;
 type nycNeighborhoodsTool = InferUITool<typeof nycNeighborhoods>;
 type plutoTool = InferUITool<typeof pluto>;
+type nycSchoolZonesTool = InferUITool<typeof nycSchoolZones>;
+type nycParksTool = InferUITool<typeof nycParks>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -44,6 +48,8 @@ export type ChatTools = {
   readJSON: readJSONTool;
   nycNeighborhoods: nycNeighborhoodsTool;
   pluto: plutoTool;
+  nycSchoolZones: nycSchoolZonesTool;
+  nycParks: nycParksTool;
 };
 
 export type CustomUIDataTypes = {

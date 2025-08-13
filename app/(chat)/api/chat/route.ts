@@ -26,6 +26,8 @@ import { getWeather } from '@/lib/ai/tools/get-weather';
 import { updateAreaTool } from '@/lib/ai/tools/update-area';
 import { readJSON } from '@/lib/ai/tools/read-json';
 import { nycNeighborhoods } from '@/lib/ai/tools/nyc-neighborhoods';
+import { nycSchoolZones } from '@/lib/ai/tools/nyc-school-zones';
+import { nycParks } from '@/lib/ai/tools/nyc-parks';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -174,6 +176,8 @@ export async function POST(request: Request) {
                   'updateArea',
                   'readJSON',
                   'nycNeighborhoods',
+                  'nycSchoolZones',
+                  'nycParks',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -192,6 +196,8 @@ export async function POST(request: Request) {
             }),
             readJSON,
             nycNeighborhoods,
+            nycSchoolZones,
+            nycParks,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

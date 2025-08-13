@@ -136,7 +136,7 @@ export function Chat({
       <div className="flex h-dvh bg-background">
         {/* Map Section - 2/3 of the screen */}
         <div className="w-1/2 h-full">
-          <AreaMap chatId={id} />
+          <AreaMap chatId={id} messages={messages} />
         </div>
 
         {/* Chat Section - 1/3 of the screen */}

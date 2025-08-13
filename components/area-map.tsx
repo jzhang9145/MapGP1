@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Card } from '@/components/ui/card';
 import { useArea } from '@/hooks/use-area';
+import { useSchoolZonesFromMessages } from '@/hooks/use-school-zones';
+import { useParksFromMessages } from '@/hooks/use-parks';
+import type { ChatMessage } from '@/lib/types';
 
 // Dynamically import the map components to avoid SSR issues
 const MapContainer = dynamic(
@@ -33,6 +36,7 @@ const GeoJSON = dynamic(
 
 interface AreaMapProps {
   chatId: string;
+  messages: ChatMessage[];
 }
 
 // Default New York City coordinates
@@ -40,9 +44,11 @@ const DEFAULT_LATITUDE = 40.7128;
 const DEFAULT_LONGITUDE = -74.006;
 const DEFAULT_ZOOM = 12;
 
-export function AreaMap({ chatId }: AreaMapProps) {
+export function AreaMap({ chatId, messages }: AreaMapProps) {
   const [isClient, setIsClient] = useState(false);
   const { area, isLoading } = useArea(chatId);
+  const { schoolZones, isVisible: schoolZonesVisible } = useSchoolZonesFromMessages(messages, chatId);
+  const { parks, isVisible: parksVisible } = useParksFromMessages(messages, chatId);
 
   useEffect(() => {
     setIsClient(true);
@@ -130,8 +136,136 @@ export function AreaMap({ chatId }: AreaMapProps) {
               }}
             />
           )}
+
+          {/* Render School Zone GeoJSON data */}
+          {schoolZonesVisible && schoolZones.map((zone, index) => (
+            zone.geojson && (
+              <GeoJSON
+                key={`school-zone-${zone.id}-${index}`}
+                data={zone.geojson}
+                style={{
+                  color: '#9333ea', // Purple color for school zones
+                  weight: 2,
+                  opacity: 0.8,
+                  fillColor: '#9333ea',
+                  fillOpacity: 0.1,
+                }}
+                pointToLayer={(feature, latlng) => {
+                  return new (window as any).L.CircleMarker(latlng, {
+                    radius: 8,
+                    fillColor: '#9333ea',
+                    color: '#7c3aed',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.6,
+                  });
+                }}
+                onEachFeature={(feature, layer) => {
+                  // Create rich popup for school zones
+                  const boroughName = getBoroughName(zone.borough);
+                  const popupContent = `
+                    <div class="p-3 min-w-[200px]">
+                      <h3 class="font-semibold text-sm text-purple-800 mb-1">
+                        ${zone.dbn}${zone.schoolName ? ` - ${zone.schoolName}` : ''}
+                      </h3>
+                      <div class="text-xs text-purple-600 mb-2">
+                        ${zone.label || 'Elementary School Zone'}
+                      </div>
+                      <div class="space-y-1 text-xs">
+                        <div><strong>District:</strong> ${zone.schoolDistrict}</div>
+                        <div><strong>Borough:</strong> ${boroughName}</div>
+                        ${zone.shapeArea ? `<div><strong>Area:</strong> ${parseFloat(zone.shapeArea).toLocaleString()} sq ft</div>` : ''}
+                      </div>
+                      ${zone.remarks ? `
+                        <div class="mt-2 p-2 bg-purple-50 rounded text-xs">
+                          <strong>Notes:</strong> ${zone.remarks}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                  layer.bindPopup(popupContent);
+                }}
+              />
+            )
+          ))}
+
+          {/* Parks Layer - Green color for parks */}
+          {parksVisible && parks.map((park) => (
+            park.geojson && (
+              <GeoJSON
+                key={`park-${park.id}`}
+                data={park.geojson}
+                style={{
+                  color: '#16a34a',
+                  weight: 2,
+                  opacity: 0.8,
+                  fillColor: '#16a34a',
+                  fillOpacity: 0.3,
+                }}
+                onEachFeature={(feature, layer) => {
+                  const parkName = park.name || park.signname || 'Unnamed Park';
+                  const popupContent = `
+                    <div class="p-3 min-w-[200px]">
+                      <h3 class="font-semibold text-sm text-green-800 mb-1">
+                        🏞️ ${parkName}
+                      </h3>
+                      ${park.signname && park.signname !== park.name ? `
+                        <div class="text-xs text-green-600 mb-2">
+                          Sign Name: ${park.signname}
+                        </div>
+                      ` : ''}
+                      <div class="space-y-1 text-xs">
+                        ${park.borough ? `<div><strong>Borough:</strong> ${getBoroughDisplayName(park.borough)}</div>` : ''}
+                        ${park.address ? `<div><strong>Address:</strong> ${park.address}</div>` : ''}
+                        ${park.acreage ? `<div><strong>Size:</strong> ${park.acreage} acres</div>` : ''}
+                        ${park.typecategory ? `<div><strong>Type:</strong> ${park.typecategory}</div>` : ''}
+                        ${park.department ? `<div><strong>Managed by:</strong> ${park.department}</div>` : ''}
+                        ${park.waterfront === 'Y' ? `<div class="text-cyan-600"><strong>🌊 Waterfront Location</strong></div>` : ''}
+                      </div>
+                    </div>
+                  `;
+                  layer.bindPopup(popupContent);
+                }}
+              />
+            )
+          ))}
         </MapContainer>
       </div>
     </Card>
   );
+}
+
+// Helper function to convert borough codes to names
+function getBoroughName(borough: string): string {
+  const boroughMap: Record<string, string> = {
+    K: 'Brooklyn',
+    M: 'Manhattan', 
+    Q: 'Queens',
+    X: 'Bronx',
+    R: 'Staten Island',
+  };
+  return boroughMap[borough?.toUpperCase()] || borough;
+}
+
+// Helper function to get borough display name (for parks)
+function getBoroughDisplayName(borough: string): string {
+  const boroughMap: Record<string, string> = {
+    '1': 'Manhattan',
+    '2': 'Bronx',
+    '3': 'Brooklyn',
+    '4': 'Queens',
+    '5': 'Staten Island',
+    'M': 'Manhattan',
+    'X': 'Bronx',
+    'K': 'Brooklyn',
+    'Q': 'Queens',
+    'R': 'Staten Island',
+    'Manhattan': 'Manhattan',
+    'Bronx': 'Bronx',
+    'Brooklyn': 'Brooklyn',
+    'Queens': 'Queens',
+    'Staten Island': 'Staten Island',
+  };
+  
+  return boroughMap[borough] || borough;
 }

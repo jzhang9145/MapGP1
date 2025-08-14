@@ -56,6 +56,15 @@ export const NYCCensusTool = ({
               {summary.avgUnemploymentRate && (
                 <div><strong>Avg Unemployment:</strong> {summary.avgUnemploymentRate}%</div>
               )}
+              {summary.avgPopulationGrowth !== undefined && summary.avgPopulationGrowth !== null && (
+                <div><strong>Avg Pop Growth:</strong> {summary.avgPopulationGrowth > 0 ? '+' : ''}{summary.avgPopulationGrowth}%</div>
+              )}
+              {summary.avgIncomeGrowth !== undefined && summary.avgIncomeGrowth !== null && (
+                <div><strong>Avg Income Growth:</strong> {summary.avgIncomeGrowth > 0 ? '+' : ''}{summary.avgIncomeGrowth}%</div>
+              )}
+              {summary.avgHousingGrowth !== undefined && summary.avgHousingGrowth !== null && (
+                <div><strong>Avg Housing Growth:</strong> {summary.avgHousingGrowth > 0 ? '+' : ''}{summary.avgHousingGrowth}%</div>
+              )}
               <div><strong>Total Blocks:</strong> {summary.totalBlocks}</div>
             </div>
           </div>
@@ -71,6 +80,16 @@ export const NYCCensusTool = ({
                 )}
                 {block.medianHouseholdIncome && (
                   <span className="text-gray-600"> • Income: ${block.medianHouseholdIncome.toLocaleString()}</span>
+                )}
+                {block.populationGrowth !== undefined && block.populationGrowth !== null && (
+                  <span className={`ml-1 ${block.populationGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    • Pop: {block.populationGrowth > 0 ? '+' : ''}{block.populationGrowth}%
+                  </span>
+                )}
+                {block.incomeGrowth !== undefined && block.incomeGrowth !== null && (
+                  <span className={`ml-1 ${block.incomeGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    • Inc: {block.incomeGrowth > 0 ? '+' : ''}{block.incomeGrowth}%
+                  </span>
                 )}
               </li>
             ))}

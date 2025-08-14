@@ -307,6 +307,21 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
                         ${block.unemploymentRate ? `<div><strong>Unemployment:</strong> ${block.unemploymentRate}%</div>` : ''}
                         ${block.bachelorsOrHigher ? `<div><strong>Bachelor's+:</strong> ${block.bachelorsOrHigher} people</div>` : ''}
                         <div><strong>Borough:</strong> ${block.borough}</div>
+                        ${(block as any).populationGrowth !== undefined && (block as any).populationGrowth !== null ? `
+                          <div class="${(block as any).populationGrowth >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            <strong>Population Growth:</strong> ${(block as any).populationGrowth > 0 ? '+' : ''}${(block as any).populationGrowth}%
+                          </div>
+                        ` : ''}
+                        ${(block as any).incomeGrowth !== undefined && (block as any).incomeGrowth !== null ? `
+                          <div class="${(block as any).incomeGrowth >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            <strong>Income Growth:</strong> ${(block as any).incomeGrowth > 0 ? '+' : ''}${(block as any).incomeGrowth}%
+                          </div>
+                        ` : ''}
+                        ${(block as any).housingGrowth !== undefined && (block as any).housingGrowth !== null ? `
+                          <div class="${(block as any).housingGrowth >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            <strong>Housing Growth:</strong> ${(block as any).housingGrowth > 0 ? '+' : ''}${(block as any).housingGrowth}%
+                          </div>
+                        ` : ''}
                       </div>
                     </div>
                   `;

@@ -1858,3 +1858,149 @@ export async function clearNYCCensusBlocks() {
     );
   }
 }
+
+export async function getNYCCensusBlocksWithGrowth({
+  searchTerm,
+  minPopulation,
+  maxPopulation,
+  minIncome,
+  maxIncome,
+  minPopulationGrowth,
+  maxPopulationGrowth,
+  minIncomeGrowth,
+  maxIncomeGrowth,
+  limit = 20,
+}: {
+  searchTerm?: string;
+  minPopulation?: number;
+  maxPopulation?: number;
+  minIncome?: number;
+  maxIncome?: number;
+  minPopulationGrowth?: number;
+  maxPopulationGrowth?: number;
+  minIncomeGrowth?: number;
+  maxIncomeGrowth?: number;
+  limit?: number;
+} = {}) {
+  try {
+    console.log('🔍 Fetching census blocks with growth data...', {
+      minIncomeGrowth,
+      maxIncomeGrowth,
+      minPopulationGrowth,
+      maxPopulationGrowth
+    });
+    
+    // Build query conditions
+    const conditions = [eq(nycCensusBlocks.dataYear, 2023)];
+    
+    if (searchTerm) {
+      conditions.push(ilike(nycCensusBlocks.geoid, `%${searchTerm}%`));
+    }
+    if (minPopulation) {
+      conditions.push(gte(nycCensusBlocks.totalPopulation, minPopulation));
+    }
+    if (maxPopulation) {
+      conditions.push(lte(nycCensusBlocks.totalPopulation, maxPopulation));
+    }
+    if (minIncome) {
+      conditions.push(gte(nycCensusBlocks.medianHouseholdIncome, minIncome));
+    }
+    if (maxIncome) {
+      conditions.push(lte(nycCensusBlocks.medianHouseholdIncome, maxIncome));
+    }
+    
+    // Add growth filters using existing growth rate fields
+    if (minPopulationGrowth !== undefined) {
+      conditions.push(gte(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`, minPopulationGrowth));
+    }
+    if (maxPopulationGrowth !== undefined) {
+      conditions.push(lte(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`, maxPopulationGrowth));
+    }
+    if (minIncomeGrowth !== undefined) {
+      conditions.push(gte(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`, minIncomeGrowth));
+    }
+    if (maxIncomeGrowth !== undefined) {
+      conditions.push(lte(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`, maxIncomeGrowth));
+    }
+
+    // Execute query with all conditions
+    const baseQuery = db
+      .select({
+        id: nycCensusBlocks.id,
+        geoid: nycCensusBlocks.geoid,
+        state: nycCensusBlocks.state,
+        county: nycCensusBlocks.county,
+        tract: nycCensusBlocks.tract,
+        block: nycCensusBlocks.block,
+        totalPopulation: nycCensusBlocks.totalPopulation,
+        totalHouseholds: nycCensusBlocks.totalHouseholds,
+        occupiedHouseholds: nycCensusBlocks.occupiedHouseholds,
+        vacantHouseholds: nycCensusBlocks.vacantHouseholds,
+        medianHouseholdIncome: nycCensusBlocks.medianHouseholdIncome,
+        totalHousingUnits: nycCensusBlocks.totalHousingUnits,
+        ownerOccupied: nycCensusBlocks.ownerOccupied,
+        renterOccupied: nycCensusBlocks.renterOccupied,
+        medianAge: nycCensusBlocks.medianAge,
+        whiteAlone: nycCensusBlocks.whiteAlone,
+        blackAlone: nycCensusBlocks.blackAlone,
+        asianAlone: nycCensusBlocks.asianAlone,
+        hispanicLatino: nycCensusBlocks.hispanicLatino,
+        bachelorsOrHigher: nycCensusBlocks.bachelorsOrHigher,
+        unemploymentRate: nycCensusBlocks.unemploymentRate,
+        borough: nycCensusBlocks.borough,
+        geojsonDataId: nycCensusBlocks.geojsonDataId,
+        // Use existing growth fields
+        populationGrowth: sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`.as('populationGrowth'),
+        incomeGrowth: sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`.as('incomeGrowth'),
+        housingGrowth: sql`NULL`.as('housingGrowth'), // Not available in existing data
+      })
+      .from(nycCensusBlocks)
+      .where(and(...conditions));
+
+    // Add ORDER BY clause based on what kind of query this is
+    let orderBy;
+    if (minPopulationGrowth !== undefined || maxPopulationGrowth !== undefined) {
+      orderBy = desc(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`);
+    } else if (minIncomeGrowth !== undefined || maxIncomeGrowth !== undefined) {
+      orderBy = desc(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`);
+    } else {
+      // Default: sort by population growth (highest first), then by population
+      orderBy = desc(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`);
+    }
+
+    const results = await baseQuery.orderBy(orderBy).limit(limit);
+
+    // Get GeoJSON data
+    const geojsonDataIds = results.map(r => r.geojsonDataId).filter(Boolean);
+    let geojsonResults: any[] = [];
+    if (geojsonDataIds.length > 0) {
+      geojsonResults = await db
+        .select({
+          id: geojsonData.id,
+          data: geojsonData.data,
+        })
+        .from(geojsonData)
+        .where(inArray(geojsonData.id, geojsonDataIds));
+    }
+
+    // Build geojson lookup map
+    const geojsonMap = new Map(geojsonResults.map(r => [r.id, r.data]));
+
+    // Build final results with geojson
+    const finalResults = results.map(block => ({
+      ...block,
+      geojson: block.geojsonDataId ? geojsonMap.get(block.geojsonDataId) : null,
+    }));
+    
+    console.log(`📊 Found ${finalResults.length} census blocks with growth data`);
+    
+    return finalResults;
+    
+  } catch (error) {
+    console.error('❌ Error fetching census blocks with growth:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to fetch NYC census blocks with growth data',
+    );
+  }
+}

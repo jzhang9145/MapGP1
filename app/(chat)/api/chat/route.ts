@@ -180,8 +180,8 @@ export async function POST(request: Request) {
                   'nycNeighborhoods',
                   'nycSchoolZones',
                   'nycParks',
-                  'spatialAnalysis',
-                  'nycCensus',
+                                      'spatialAnalysis',
+                    'nycCensus',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {

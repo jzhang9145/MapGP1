@@ -28,6 +28,10 @@ export const censusBlockSchema = z.object({
   unemploymentRate: z.number().nullable().optional().describe('Unemployment rate as percentage'),
   // Geographic
   borough: z.string().optional().describe('Borough name (Brooklyn)'),
+  // Growth metrics (2022 → 2023)
+  populationGrowth: z.number().nullable().optional().describe('Population growth rate 2022-2023 (%)'),
+  incomeGrowth: z.number().nullable().optional().describe('Income growth rate 2022-2023 (%)'),
+  housingGrowth: z.number().nullable().optional().describe('Housing units growth rate 2022-2023 (%)'),
   geojson: z.any().describe('GeoJSON data for the census block boundary'),
 });
 
@@ -38,6 +42,9 @@ export const censusResponseSchema = z.object({
     totalPopulation: z.number().optional().describe('Sum of population across all blocks'),
     avgMedianIncome: z.number().optional().describe('Average median household income'),
     avgUnemploymentRate: z.number().optional().describe('Average unemployment rate'),
+    avgPopulationGrowth: z.number().nullable().optional().describe('Average population growth rate 2022-2023 (%)'),
+    avgIncomeGrowth: z.number().nullable().optional().describe('Average income growth rate 2022-2023 (%)'),
+    avgHousingGrowth: z.number().nullable().optional().describe('Average housing growth rate 2022-2023 (%)'),
   }).optional().describe('Summary statistics for the census blocks'),
 });
 

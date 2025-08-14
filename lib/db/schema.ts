@@ -11,6 +11,7 @@ import {
   boolean,
   decimal,
   integer,
+  unique,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -364,7 +365,8 @@ export type NYCPark = InferSelectModel<typeof nycParks>;
 // NYC Census Blocks table to store census block boundaries and demographic data
 export const nycCensusBlocks = pgTable('NYCCensusBlocks', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
-  geoid: varchar('geoid', { length: 15 }).notNull().unique(), // Census Block GEOID (15 digit identifier)
+  geoid: varchar('geoid', { length: 15 }).notNull(), // Census Block GEOID (15 digit identifier)
+  dataYear: integer('dataYear').notNull().default(2023), // Year of ACS data (2022, 2023, etc.)
   state: varchar('state', { length: 2 }).notNull(), // State FIPS code (36 for NY)
   county: varchar('county', { length: 3 }).notNull(), // County FIPS code (047 for Kings/Brooklyn)
   tract: varchar('tract', { length: 6 }).notNull(), // Census tract code
@@ -393,7 +395,10 @@ export const nycCensusBlocks = pgTable('NYCCensusBlocks', {
   geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  // Unique constraint on geoid + dataYear to allow multiple years of data for same tract
+  uniqueGeoidYear: unique().on(table.geoid, table.dataYear),
+}));
 
 export type NYCCensusBlock = InferSelectModel<typeof nycCensusBlocks>;
 

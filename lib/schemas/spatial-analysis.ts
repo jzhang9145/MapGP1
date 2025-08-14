@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const spatialResultSchema = z.object({
   id: z.string().describe('Unique identifier'),
-  layerType: z.enum(['parks', 'neighborhoods', 'schoolZones']).describe('Type of spatial layer'),
+  layerType: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks']).describe('Type of spatial layer'),
   name: z.string().optional().describe('Name of the feature'),
   schoolName: z.string().optional().describe('School name (for school zones)'),
   dbn: z.string().optional().describe('District Borough Number (for school zones)'),
@@ -12,6 +12,13 @@ export const spatialResultSchema = z.object({
   acreage: z.string().optional().describe('Acreage (for parks)'),
   schoolDistrict: z.string().optional().describe('School district (for school zones)'),
   typecategory: z.string().optional().describe('Type category (for parks)'),
+  // Census block specific fields
+  geoid: z.string().optional().describe('Census block GEOID (for census blocks)'),
+  tract: z.string().optional().describe('Census tract (for census blocks)'),
+  block: z.string().optional().describe('Census block number (for census blocks)'),
+  totalPopulation: z.number().nullable().optional().describe('Total population (for census blocks)'),
+  medianHouseholdIncome: z.number().nullable().optional().describe('Median household income (for census blocks)'),
+  unemploymentRate: z.string().nullable().optional().describe('Unemployment rate (for census blocks)'),
   geojson: z.any().describe('GeoJSON boundary data'),
   analysisQuery: z.string().describe('The spatial query that was performed'),
   spatialRelation: z.string().describe('Type of spatial relationship'),

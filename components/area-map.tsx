@@ -7,6 +7,7 @@ import { useArea } from '@/hooks/use-area';
 import { useSchoolZonesFromMessages } from '@/hooks/use-school-zones';
 import { useParksFromMessages } from '@/hooks/use-parks';
 import { useSpatialAnalysisFromMessages } from '@/hooks/use-spatial-analysis';
+import { useCensusFromMessages } from '@/hooks/use-census';
 import type { ChatMessage } from '@/lib/types';
 
 // Dynamically import the map components to avoid SSR issues
@@ -51,6 +52,7 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
   const { schoolZones, isVisible: schoolZonesVisible } = useSchoolZonesFromMessages(messages, chatId);
   const { parks, isVisible: parksVisible } = useParksFromMessages(messages, chatId);
   const { spatialResults, isVisible: spatialResultsVisible } = useSpatialAnalysisFromMessages(messages, chatId);
+  const { censusBlocks, isVisible: censusBlocksVisible } = useCensusFromMessages(messages, chatId);
 
   useEffect(() => {
     setIsClient(true);
@@ -272,6 +274,47 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
               />
             )
           ))}
+
+          {/* Census Blocks Layer - Blue color for census data */}
+          {censusBlocksVisible && censusBlocks.map((block) => (
+            block.geojson && (
+              <GeoJSON
+                key={`census-${block.id}`}
+                data={block.geojson}
+                style={{
+                  color: '#3b82f6', // Blue color for census blocks
+                  weight: 2,
+                  opacity: 0.8,
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.2,
+                }}
+                onEachFeature={(feature, layer) => {
+                  const blockName = `Census Block ${block.block}`;
+                  const popupContent = `
+                    <div class="p-3 min-w-[200px]">
+                      <h3 class="font-semibold text-sm text-blue-800 mb-1">
+                        📊 ${blockName}
+                      </h3>
+                      <div class="text-xs text-blue-600 mb-2">
+                        GEOID: ${block.geoid}
+                      </div>
+                      <div class="space-y-1 text-xs">
+                        <div><strong>Tract:</strong> ${block.tract}</div>
+                        ${block.totalPopulation ? `<div><strong>Population:</strong> ${block.totalPopulation.toLocaleString()}</div>` : ''}
+                        ${block.medianHouseholdIncome ? `<div><strong>Median Income:</strong> $${block.medianHouseholdIncome.toLocaleString()}</div>` : ''}
+                        ${block.medianAge ? `<div><strong>Median Age:</strong> ${block.medianAge}</div>` : ''}
+                        ${block.totalHouseholds ? `<div><strong>Households:</strong> ${block.totalHouseholds}</div>` : ''}
+                        ${block.unemploymentRate ? `<div><strong>Unemployment:</strong> ${block.unemploymentRate}%</div>` : ''}
+                        ${block.bachelorsOrHigher ? `<div><strong>Bachelor's+:</strong> ${block.bachelorsOrHigher} people</div>` : ''}
+                        <div><strong>Borough:</strong> ${block.borough}</div>
+                      </div>
+                    </div>
+                  `;
+                  layer.bindPopup(popupContent);
+                }}
+              />
+            )
+          ))}
         </MapContainer>
       </div>
     </Card>
@@ -320,6 +363,7 @@ function getSpatialResultColor(layerType: string): string {
     parks: '#dc2626', // Red for parks in spatial results
     neighborhoods: '#ea580c', // Orange for neighborhoods
     schoolZones: '#7c3aed', // Purple for school zones
+    censusBlocks: '#3b82f6', // Blue for census blocks
   };
   return colorMap[layerType] || '#6366f1'; // Default indigo
 }
@@ -332,6 +376,8 @@ function getSpatialResultName(result: any): string {
     return result.name || 'Unnamed Neighborhood';
   } else if (result.layerType === 'schoolZones') {
     return result.schoolName || result.dbn || result.label || 'School Zone';
+  } else if (result.layerType === 'censusBlocks') {
+    return `Census Block ${result.block}` || result.geoid || 'Census Block';
   }
   return 'Spatial Result';
 }
@@ -342,6 +388,7 @@ function getLayerDisplayName(layerType: string): string {
     parks: 'Park',
     neighborhoods: 'Neighborhood',
     schoolZones: 'School Zone',
+    censusBlocks: 'Census Block',
   };
   return nameMap[layerType] || layerType;
 }

@@ -10,6 +10,7 @@ import {
   foreignKey,
   boolean,
   decimal,
+  integer,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -359,6 +360,42 @@ export const nycParks = pgTable('NYCParks', {
 });
 
 export type NYCPark = InferSelectModel<typeof nycParks>;
+
+// NYC Census Blocks table to store census block boundaries and demographic data
+export const nycCensusBlocks = pgTable('NYCCensusBlocks', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  geoid: varchar('geoid', { length: 15 }).notNull().unique(), // Census Block GEOID (15 digit identifier)
+  state: varchar('state', { length: 2 }).notNull(), // State FIPS code (36 for NY)
+  county: varchar('county', { length: 3 }).notNull(), // County FIPS code (047 for Kings/Brooklyn)
+  tract: varchar('tract', { length: 6 }).notNull(), // Census tract code
+  block: varchar('block', { length: 4 }).notNull(), // Census block code
+  // ACS 2023 Demographic Data
+  totalPopulation: integer('totalPopulation'), // B25001_001E - Total population
+  totalHouseholds: integer('totalHouseholds'), // B25002_001E - Total households
+  occupiedHouseholds: integer('occupiedHouseholds'), // B25002_002E - Occupied households
+  vacantHouseholds: integer('vacantHouseholds'), // B25002_003E - Vacant households
+  medianHouseholdIncome: integer('medianHouseholdIncome'), // B19013_001E - Median household income
+  totalHousingUnits: integer('totalHousingUnits'), // B25001_001E - Total housing units
+  ownerOccupied: integer('ownerOccupied'), // B25003_002E - Owner occupied
+  renterOccupied: integer('renterOccupied'), // B25003_003E - Renter occupied
+  medianAge: decimal('medianAge', { precision: 5, scale: 2 }), // B01002_001E - Median age
+  // Race/Ethnicity Data
+  whiteAlone: integer('whiteAlone'), // B02001_002E - White alone
+  blackAlone: integer('blackAlone'), // B02001_003E - Black or African American alone
+  asianAlone: integer('asianAlone'), // B02001_005E - Asian alone
+  hispanicLatino: integer('hispanicLatino'), // B03003_003E - Hispanic or Latino
+  // Education Data
+  bachelorsOrHigher: integer('bachelorsOrHigher'), // B15003_022E - Bachelor's degree or higher
+  // Employment Data
+  unemploymentRate: decimal('unemploymentRate', { precision: 5, scale: 2 }), // Calculated from B23025
+  // Geographic identifiers
+  borough: varchar('borough', { length: 50 }).notNull().default('Brooklyn'), // Always Brooklyn for our data
+  geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
+  createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NYCCensusBlock = InferSelectModel<typeof nycCensusBlocks>;
 
 // GeoJSON types for area data
 export interface GeoJSONPoint {

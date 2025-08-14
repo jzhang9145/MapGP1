@@ -41,6 +41,8 @@ import {
   type NYCSchoolZone,
   nycParks,
   type NYCPark,
+  nycCensusBlocks,
+  type NYCCensusBlock,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -1676,6 +1678,183 @@ export async function clearNYCParks() {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to clear NYC parks',
+    );
+  }
+}
+
+// NYC Census Blocks query functions
+export async function getAllNYCCensusBlocks({
+  limit = 100,
+}: {
+  limit?: number;
+} = {}) {
+  try {
+    return await db
+      .select()
+      .from(nycCensusBlocks)
+      .limit(limit)
+      .orderBy(asc(nycCensusBlocks.geoid));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC census blocks',
+    );
+  }
+}
+
+export async function searchNYCCensusBlocks({
+  searchTerm,
+  limit = 50,
+}: {
+  searchTerm: string;
+  limit?: number;
+}) {
+  try {
+    return await db
+      .select()
+      .from(nycCensusBlocks)
+      .where(
+        or(
+          ilike(nycCensusBlocks.geoid, `%${searchTerm}%`),
+          ilike(nycCensusBlocks.tract, `%${searchTerm}%`),
+        )
+      )
+      .limit(limit)
+      .orderBy(asc(nycCensusBlocks.geoid));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to search NYC census blocks',
+    );
+  }
+}
+
+export async function getNYCCensusBlockByGeoid(geoid: string) {
+  try {
+    const [censusBlock] = await db
+      .select()
+      .from(nycCensusBlocks)
+      .where(eq(nycCensusBlocks.geoid, geoid));
+    
+    return censusBlock;
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC census block by GEOID',
+    );
+  }
+}
+
+export async function getNYCCensusBlocksWithGeoJSON({
+  searchTerm,
+  minPopulation,
+  maxPopulation,
+  minIncome,
+  maxIncome,
+  limit = 100,
+}: {
+  searchTerm?: string;
+  minPopulation?: number;
+  maxPopulation?: number;
+  minIncome?: number;
+  maxIncome?: number;
+  limit?: number;
+} = {}) {
+  try {
+    let query = db
+      .select({
+        id: nycCensusBlocks.id,
+        geoid: nycCensusBlocks.geoid,
+        state: nycCensusBlocks.state,
+        county: nycCensusBlocks.county,
+        tract: nycCensusBlocks.tract,
+        block: nycCensusBlocks.block,
+        totalPopulation: nycCensusBlocks.totalPopulation,
+        totalHouseholds: nycCensusBlocks.totalHouseholds,
+        occupiedHouseholds: nycCensusBlocks.occupiedHouseholds,
+        vacantHouseholds: nycCensusBlocks.vacantHouseholds,
+        medianHouseholdIncome: nycCensusBlocks.medianHouseholdIncome,
+        totalHousingUnits: nycCensusBlocks.totalHousingUnits,
+        ownerOccupied: nycCensusBlocks.ownerOccupied,
+        renterOccupied: nycCensusBlocks.renterOccupied,
+        medianAge: nycCensusBlocks.medianAge,
+        whiteAlone: nycCensusBlocks.whiteAlone,
+        blackAlone: nycCensusBlocks.blackAlone,
+        asianAlone: nycCensusBlocks.asianAlone,
+        hispanicLatino: nycCensusBlocks.hispanicLatino,
+        bachelorsOrHigher: nycCensusBlocks.bachelorsOrHigher,
+        unemploymentRate: nycCensusBlocks.unemploymentRate,
+        borough: nycCensusBlocks.borough,
+        geojsonDataId: nycCensusBlocks.geojsonDataId,
+        createdAt: nycCensusBlocks.createdAt,
+        updatedAt: nycCensusBlocks.updatedAt,
+        geojson: geojsonData.data,
+      })
+      .from(nycCensusBlocks)
+      .leftJoin(geojsonData, eq(nycCensusBlocks.geojsonDataId, geojsonData.id));
+
+    const conditions = [];
+
+    if (searchTerm) {
+      conditions.push(
+        or(
+          ilike(nycCensusBlocks.geoid, `%${searchTerm}%`),
+          ilike(nycCensusBlocks.tract, `%${searchTerm}%`),
+        )
+      );
+    }
+
+    if (minPopulation !== undefined) {
+      conditions.push(gte(nycCensusBlocks.totalPopulation, minPopulation));
+    }
+
+    if (maxPopulation !== undefined) {
+      conditions.push(lte(nycCensusBlocks.totalPopulation, maxPopulation));
+    }
+
+    if (minIncome !== undefined) {
+      conditions.push(gte(nycCensusBlocks.medianHouseholdIncome, minIncome));
+    }
+
+    if (maxIncome !== undefined) {
+      conditions.push(lte(nycCensusBlocks.medianHouseholdIncome, maxIncome));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const censusBlocks = await query
+      .limit(limit)
+      .orderBy(asc(nycCensusBlocks.geoid));
+
+    return censusBlocks.filter(block => block.geojson);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get NYC census blocks with GeoJSON',
+    );
+  }
+}
+
+export async function createNYCCensusBlocks(censusBlocks: Array<Omit<NYCCensusBlock, 'id' | 'createdAt' | 'updatedAt'>>) {
+  try {
+    return await db.insert(nycCensusBlocks).values(censusBlocks).returning();
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to create NYC census blocks',
+    );
+  }
+}
+
+export async function clearNYCCensusBlocks() {
+  try {
+    return await db.delete(nycCensusBlocks);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to clear NYC census blocks',
     );
   }
 }

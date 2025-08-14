@@ -10,6 +10,7 @@ export { NYCNeighborhoodsTool } from './nyc-neighborhoods-tool';
 export { NYCSchoolZonesTool } from './nyc-school-zones-tool';
 export { NYCParksTool } from './nyc-parks-tool';
 export { SpatialAnalysisTool } from './spatial-analysis-tool';
+export { NYCCensusTool } from './nyc-census-tool';
 export { UpdateAreaTool } from './update-area-tool';
 export { PlutoTool } from './pluto-tool';
 export { Weather } from './weather';

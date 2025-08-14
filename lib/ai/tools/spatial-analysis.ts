@@ -4,6 +4,7 @@ import {
   searchNYCNeighborhoods,
   getNYCParksWithGeoJSON,
   getNYCSchoolZonesWithGeoJSON,
+  getNYCCensusBlocksWithGeoJSON,
   getGeoJSONDataById
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
@@ -58,10 +59,10 @@ function polygonsIntersect(poly1: number[][][], poly2: number[][][]): boolean {
 export const spatialAnalysis = tool({
   description: 
     'Perform true spatial analysis between NYC data layers using GeoJSON boundaries. ' +
-    'Finds parks within neighborhoods, school zones in specific areas using actual geometric intersection. ' +
+    'Finds parks within neighborhoods, school zones in specific areas, census blocks in neighborhoods using actual geometric intersection. ' +
     'Uses neighborhood GeoJSON boundaries as spatial filters to find overlapping features.',
   inputSchema: z.object({
-    primaryLayer: z.enum(['parks', 'neighborhoods', 'schoolZones']).describe(
+    primaryLayer: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks']).describe(
       'The main layer to search for results in'
     ),
     filterValue: z.string().describe(
@@ -383,6 +384,79 @@ export const spatialAnalysis = tool({
         }
 
         console.log(`📊 Found ${results.length} school zones intersecting ${filterDescription}`);
+
+      } else if (primaryLayer === 'censusBlocks') {
+        // Get all census blocks and check intersection
+        const allCensusBlocks = await getNYCCensusBlocksWithGeoJSON({
+          limit: 500  // Census blocks are small, might need more
+        });
+
+        console.log(`📍 Checking ${allCensusBlocks.length} census blocks for spatial intersection...`);
+
+        for (const block of allCensusBlocks) {
+          if (!block.geojson) continue;
+
+          // Handle GeoJSON Feature vs direct geometry
+          let geometry = block.geojson;
+          if (block.geojson.type === 'Feature') {
+            geometry = block.geojson.geometry;
+          }
+
+          if (!geometry || !geometry.type) continue;
+
+          let blockPolygon: number[][][] | null = null;
+          if (geometry.type === 'Polygon') {
+            blockPolygon = geometry.coordinates;
+          } else if (geometry.type === 'MultiPolygon') {
+            blockPolygon = geometry.coordinates[0];
+          } else if (geometry.type === 'Point') {
+            // Handle Point geometry for census blocks
+            const point = geometry.coordinates;
+            if (pointInPolygon(point, filterPolygon)) {
+              results.push({
+                id: block.id,
+                layerType: 'censusBlocks',
+                name: `Census Block ${block.block}`,
+                geoid: block.geoid,
+                tract: block.tract,
+                block: block.block,
+                totalPopulation: block.totalPopulation,
+                medianHouseholdIncome: block.medianHouseholdIncome,
+                borough: block.borough,
+                geojson: block.geojson,
+                analysisQuery: `census blocks within ${filterValue}`,
+                spatialRelation: 'within',
+                filterDescription: filterDescription
+              });
+
+              if (results.length >= limit) break;
+            }
+            continue;
+          }
+
+          if (blockPolygon && polygonsIntersect(filterPolygon, blockPolygon)) {
+            results.push({
+              id: block.id,
+              layerType: 'censusBlocks',
+              name: `Census Block ${block.block}`,
+              geoid: block.geoid,
+              tract: block.tract,
+              block: block.block,
+              totalPopulation: block.totalPopulation,
+              medianHouseholdIncome: block.medianHouseholdIncome,
+              unemploymentRate: block.unemploymentRate,
+              borough: block.borough,
+              geojson: block.geojson,
+              analysisQuery: `census blocks intersecting ${filterValue}`,
+              spatialRelation: 'intersects',
+              filterDescription: filterDescription
+            });
+
+            if (results.length >= limit) break;
+          }
+        }
+
+        console.log(`📊 Found ${results.length} census blocks intersecting ${filterDescription}`);
       }
 
       return {

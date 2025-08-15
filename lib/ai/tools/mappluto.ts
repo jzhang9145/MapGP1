@@ -131,7 +131,7 @@ async function fetchMapPLUTOFromAPI(filters: {
     }
     
     // Transform API response to match our schema
-    return data.map((row: any) => ({
+    const properties = data.map((row: any) => ({
       id: row.bbl || '', // Use BBL as ID since it's unique
       bbl: row.bbl || '',
       borough: 'Brooklyn',
@@ -185,6 +185,10 @@ async function fetchMapPLUTOFromAPI(filters: {
       ycoord: row.ycoord ? parseInt(row.ycoord) : null,
       zonemap: row.zonemap || null,
       zmcode: row.zmcode || null,
+      zonedist1: row.zonedist1 || null,
+      zonedist2: row.zonedist2 || null,
+      zonedist3: row.zonedist3 || null,
+      zonedist4: row.zonedist4 || null,
       sanborn: row.sanborn || null,
       taxmap: row.taxmap || null,
       edesignum: row.edesignum || null,
@@ -195,8 +199,28 @@ async function fetchMapPLUTOFromAPI(filters: {
       address: row.address || null,
       zipcode: row.zipcode || null,
       geojsonDataId: null, // No geometry from this API
-      geojson: null, // No geometry from this simple API call
+      geojson: null, // Will be populated below for first few properties
     }));
+
+    // For the first few properties, try to get geometry from ArcGIS for map display
+    // This ensures we have boundaries to show on the map
+    console.log(`🗺️ Fetching geometry for first ${Math.min(properties.length, 5)} properties...`);
+    for (let i = 0; i < Math.min(properties.length, 5); i++) {
+      const property = properties[i];
+      if (property.bbl) {
+        try {
+          const geometry = await fetchGeometryFromArcGIS(property.bbl);
+          if (geometry) {
+            properties[i].geojson = geometry.geometry;
+            console.log(`✅ Got geometry for BBL ${property.bbl}`);
+          }
+        } catch (error) {
+          console.log(`⚠️ Could not get geometry for BBL ${property.bbl}`);
+        }
+      }
+    }
+
+    return properties;
     
   } catch (error) {
     console.error('❌ Error fetching from NYC API:', error);

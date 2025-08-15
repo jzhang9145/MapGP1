@@ -26,8 +26,9 @@ export function useMapPLUTOFromMessages(messages: any[], chatId: string) {
             part.output?.properties
           ) {
             // Add properties with GeoJSON data to the map
-            const propertiesWithGeometry = part.output.properties.filter((prop: NYCMapPLUTO) => 
-              prop.geojsonDataId && prop.geojsonDataId !== null
+            // Check for direct geojson field (new API approach) or geojsonDataId (old DB approach)
+            const propertiesWithGeometry = part.output.properties.filter((prop: any) => 
+              prop.geojson || (prop.geojsonDataId && prop.geojsonDataId !== null)
             );
             latestProperties.push(...propertiesWithGeometry);
           }
@@ -35,19 +36,28 @@ export function useMapPLUTOFromMessages(messages: any[], chatId: string) {
       }
     });
 
-    // Fetch GeoJSON data for properties if we have new ones
+    // Handle properties with geometry
     if (latestProperties.length > 0) {
       setIsLoading(true);
       
-      // Extract unique GeoJSON data IDs
-      const geojsonDataIds = [...new Set(
-        latestProperties
-          .map(prop => prop.geojsonDataId)
-          .filter(id => id !== null) as string[]
-      )];
+      // Check if we have properties with direct geojson data (new API approach)
+      const propertiesWithDirectGeoJSON = latestProperties.filter((prop: any) => prop.geojson);
+      const propertiesNeedingFetch = latestProperties.filter((prop: any) => 
+        !prop.geojson && prop.geojsonDataId && prop.geojsonDataId !== null
+      );
 
-      // Fetch the GeoJSON data
-      if (geojsonDataIds.length > 0) {
+      // If we have properties with direct GeoJSON, use them immediately
+      if (propertiesWithDirectGeoJSON.length > 0) {
+        setProperties(propertiesWithDirectGeoJSON);
+        setVisible(true);
+        setIsLoading(false);
+      } 
+      // Otherwise, try to fetch GeoJSON data for properties with geojsonDataId
+      else if (propertiesNeedingFetch.length > 0) {
+        const geojsonDataIds = [...new Set(
+          propertiesNeedingFetch.map(prop => prop.geojsonDataId).filter(id => id !== null) as string[]
+        )];
+
         fetch('/api/mappluto/geojson', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,6 +79,7 @@ export function useMapPLUTOFromMessages(messages: any[], chatId: string) {
             setIsLoading(false);
           });
       } else {
+        // No geometry available
         setProperties(latestProperties);
         setVisible(true);
         setIsLoading(false);

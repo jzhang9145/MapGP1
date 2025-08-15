@@ -28,6 +28,7 @@ import {
   NYCParksTool,
   SpatialAnalysisTool,
   NYCCensusTool,
+  MapPLUTOTool,
   UpdateAreaTool,
   PlutoTool,
 } from './tool-messages';
@@ -325,6 +326,20 @@ const PurePreviewMessage = ({
                 const output = 'output' in part ? part.output : undefined;
                 return (
                   <NYCCensusTool
+                    key={toolCallId}
+                    toolCallId={toolCallId}
+                    state={state}
+                    input={input}
+                    output={output}
+                  />
+                );
+              }
+
+              if (type === 'tool-mappluto') {
+                const { toolCallId, state, input } = part;
+                const output = 'output' in part ? part.output : undefined;
+                return (
+                  <MapPLUTOTool
                     key={toolCallId}
                     toolCallId={toolCallId}
                     state={state}

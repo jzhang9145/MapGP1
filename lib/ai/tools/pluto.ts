@@ -91,7 +91,7 @@ export const pluto = tool({
       } else if (areaId) {
         // Get PLUTO data for the currently selected area
         try {
-          lots = await getPlutoLotsByArea({ areaId, limit });
+          lots = await getAllPlutoLots({ limit });
         } catch (error) {
           console.error('Error getting PLUTO data by area:', error);
           // Fallback to getting all lots if area query fails

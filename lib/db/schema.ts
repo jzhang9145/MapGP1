@@ -12,6 +12,9 @@ import {
   decimal,
   integer,
   unique,
+  numeric,
+  bigint,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -401,6 +404,118 @@ export const nycCensusBlocks = pgTable('NYCCensusBlocks', {
 }));
 
 export type NYCCensusBlock = InferSelectModel<typeof nycCensusBlocks>;
+
+// MapPLUTO (Tax Lot) Data
+export const nycMapPLUTO = pgTable('NYCMapPLUTO', {
+  id: uuid('id').notNull().defaultRandom().primaryKey(),
+  
+  // Property Identifiers
+  bbl: varchar('bbl', { length: 25 }).notNull(), // Borough-Block-Lot
+  borough: varchar('borough', { length: 20 }).notNull(),
+  block: varchar('block', { length: 10 }),
+  lot: varchar('lot', { length: 10 }),
+  cd: varchar('cd', { length: 3 }), // Community District
+  
+  // Property Classification
+  bldgclass: varchar('bldgclass', { length: 5 }), // Building Class (A1, R4, etc.)
+  landuse: varchar('landuse', { length: 5 }), // Land Use Code
+  ownertype: varchar('ownertype', { length: 5 }), // Owner Type
+  ownername: text('ownername'), // Owner Name
+  
+  // Property Dimensions
+  lotarea: integer('lotarea'), // Lot Area (sq ft)
+  bldgarea: integer('bldgarea'), // Building Area (sq ft)
+  comarea: integer('comarea'), // Commercial Area
+  resarea: integer('resarea'), // Residential Area
+  officearea: integer('officearea'), // Office Area
+  retailarea: integer('retailarea'), // Retail Area
+  garagearea: integer('garagearea'), // Garage Area
+  strgearea: integer('strgearea'), // Storage Area
+  factryarea: integer('factryarea'), // Factory Area
+  otherarea: integer('otherarea'), // Other Area
+  areasource: varchar('areasource', { length: 5 }), // Area Source
+  
+  // Building Details
+  numbldgs: integer('numbldgs'), // Number of Buildings
+  numfloors: numeric('numfloors'), // Number of Floors
+  unitsres: integer('unitsres'), // Residential Units
+  unitstotal: integer('unitstotal'), // Total Units
+  
+  // Lot Measurements
+  lotfront: numeric('lotfront'), // Lot Frontage
+  lotdepth: numeric('lotdepth'), // Lot Depth
+  bldgfront: numeric('bldgfront'), // Building Frontage
+  bldgdepth: numeric('bldgdepth'), // Building Depth
+  
+  // Property Characteristics
+  ext: varchar('ext', { length: 5 }), // Extension
+  proxcode: varchar('proxcode', { length: 5 }), // Proximity Code
+  irrlotcode: varchar('irrlotcode', { length: 10 }), // Irregular Lot Code
+  lottype: varchar('lottype', { length: 5 }), // Lot Type
+  bsmtcode: varchar('bsmtcode', { length: 5 }), // Basement Code
+  
+  // Assessment & Valuation
+  assessland: bigint('assessland', { mode: 'number' }), // Land Assessment
+  assesstot: bigint('assesstot', { mode: 'number' }), // Total Assessment
+  exempttot: bigint('exempttot', { mode: 'number' }), // Total Exemptions
+  
+  // Historical Information
+  yearbuilt: integer('yearbuilt'), // Year Built
+  yearalter1: integer('yearalter1'), // Year of First Alteration
+  yearalter2: integer('yearalter2'), // Year of Second Alteration
+  histdist: varchar('histdist', { length: 50 }), // Historic District
+  landmark: varchar('landmark', { length: 50 }), // Landmark Status
+  
+  // Floor Area Ratio (FAR)
+  builtfar: numeric('builtfar'), // Built FAR
+  residfar: numeric('residfar'), // Residential FAR
+  commfar: numeric('commfar'), // Commercial FAR
+  facilfar: numeric('facilfar'), // Facility FAR
+  
+  // Geographic Identifiers
+  borocode: varchar('borocode', { length: 5 }), // Borough Code
+  condono: varchar('condono', { length: 4 }), // Condo Number
+  tract2010: varchar('tract2010', { length: 6 }), // Census Tract 2010
+  xcoord: integer('xcoord'), // X Coordinate
+  ycoord: integer('ycoord'), // Y Coordinate
+  
+  // Zoning
+  zonemap: varchar('zonemap', { length: 3 }), // Zone Map
+  zmcode: varchar('zmcode', { length: 10 }), // Zone Map Code
+  zonedist1: varchar('zonedist1', { length: 12 }), // Primary Zoning District
+  zonedist2: varchar('zonedist2', { length: 12 }), // Secondary Zoning District
+  zonedist3: varchar('zonedist3', { length: 12 }), // Tertiary Zoning District
+  zonedist4: varchar('zonedist4', { length: 12 }), // Quaternary Zoning District
+  sanborn: varchar('sanborn', { length: 8 }), // Sanborn Map
+  taxmap: varchar('taxmap', { length: 5 }), // Tax Map
+  edesignum: varchar('edesignum', { length: 10 }), // E-Designation Number
+  
+  // Additional Identifiers
+  appbbl: varchar('appbbl', { length: 25 }), // Apportioned BBL
+  appdate: varchar('appdate', { length: 30 }), // Apportionment Date
+  plutomapid: varchar('plutomapid', { length: 10 }), // PLUTO Map ID
+  version: varchar('version', { length: 10 }), // PLUTO Version
+  
+  // Address Information
+  address: text('address'), // Street Address
+  zipcode: varchar('zipcode', { length: 5 }), // ZIP Code
+  
+  // GeoJSON Reference
+  geojsonDataId: uuid('geojsonDataId').references(() => geojsonData.id),
+  
+  // Metadata
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => ({
+  bblIndex: index('mappluto_bbl_idx').on(table.bbl),
+  boroughIndex: index('mappluto_borough_idx').on(table.borough),
+  bldgclassIndex: index('mappluto_bldgclass_idx').on(table.bldgclass),
+  landuseIndex: index('mappluto_landuse_idx').on(table.landuse),
+  assessmentIndex: index('mappluto_assessment_idx').on(table.assesstot),
+  yearbuiltIndex: index('mappluto_yearbuilt_idx').on(table.yearbuilt),
+}));
+
+export type NYCMapPLUTO = InferSelectModel<typeof nycMapPLUTO>;
 
 // GeoJSON types for area data
 export interface GeoJSONPoint {

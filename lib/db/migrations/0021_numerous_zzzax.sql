@@ -1,0 +1,2 @@
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bbl" SET DATA TYPE varchar(25);--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "appbbl" SET DATA TYPE varchar(25);

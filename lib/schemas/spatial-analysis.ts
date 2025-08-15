@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const spatialResultSchema = z.object({
   id: z.string().describe('Unique identifier'),
-  layerType: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks']).describe('Type of spatial layer'),
+  layerType: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks', 'properties']).describe('Type of spatial layer'),
   name: z.string().optional().describe('Name of the feature'),
   schoolName: z.string().optional().describe('School name (for school zones)'),
   dbn: z.string().optional().describe('District Borough Number (for school zones)'),
@@ -19,6 +19,16 @@ export const spatialResultSchema = z.object({
   totalPopulation: z.number().nullable().optional().describe('Total population (for census blocks)'),
   medianHouseholdIncome: z.number().nullable().optional().describe('Median household income (for census blocks)'),
   unemploymentRate: z.string().nullable().optional().describe('Unemployment rate (for census blocks)'),
+  // MapPLUTO property specific fields
+  bbl: z.string().optional().describe('Borough-Block-Lot identifier (for properties)'),
+  ownername: z.string().optional().describe('Property owner name (for properties)'),
+  bldgclass: z.string().optional().describe('Building class (for properties)'),
+  landuse: z.string().optional().describe('Land use code (for properties)'),
+  zonedist1: z.string().optional().describe('Primary zoning district (for properties)'),
+  assesstot: z.number().nullable().optional().describe('Total assessed value (for properties)'),
+  lotarea: z.number().nullable().optional().describe('Lot area in sq ft (for properties)'),
+  bldgarea: z.number().nullable().optional().describe('Building area in sq ft (for properties)'),
+  yearbuilt: z.number().nullable().optional().describe('Year built (for properties)'),
   geojson: z.any().describe('GeoJSON boundary data'),
   analysisQuery: z.string().describe('The spatial query that was performed'),
   spatialRelation: z.string().describe('Type of spatial relationship'),

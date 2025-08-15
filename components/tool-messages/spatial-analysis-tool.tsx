@@ -59,12 +59,16 @@ export const SpatialAnalysisTool = ({
       parks: '🏞️',
       neighborhoods: '🏘️',
       schoolZones: '🏫',
+      properties: '🏢',
+      censusBlocks: '📊',
     };
 
     const layerNames: Record<string, string> = {
       parks: 'Parks',
       neighborhoods: 'Neighborhoods', 
       schoolZones: 'School Zones',
+      properties: 'Properties',
+      censusBlocks: 'Census Blocks',
     };
 
     return (
@@ -102,6 +106,8 @@ export const SpatialAnalysisTool = ({
                         {primaryLayer === 'parks' && (result.name || result.signname || 'Unnamed Park')}
                         {primaryLayer === 'neighborhoods' && result.name}
                         {primaryLayer === 'schoolZones' && (result.schoolName || result.dbn || result.label)}
+                        {primaryLayer === 'properties' && (result.address || `BBL ${result.bbl}`)}
+                        {primaryLayer === 'censusBlocks' && result.name}
                       </div>
                       
                       <div className="space-y-1 text-gray-600">
@@ -140,6 +146,46 @@ export const SpatialAnalysisTool = ({
                             )}
                             {result.schoolDistrict && (
                               <div>🏫 District: {result.schoolDistrict}</div>
+                            )}
+                          </>
+                        )}
+                        
+                        {primaryLayer === 'properties' && (
+                          <>
+                            {result.bbl && (
+                              <div>🏠 BBL: {result.bbl}</div>
+                            )}
+                            {result.zonedist1 && (
+                              <div>🏘️ Zoning: {result.zonedist1}</div>
+                            )}
+                            {result.bldgclass && (
+                              <div>🏗️ Building Class: {result.bldgclass}</div>
+                            )}
+                            {result.assesstot && (
+                              <div>💰 Assessment: ${result.assesstot.toLocaleString()}</div>
+                            )}
+                            {result.lotarea && (
+                              <div>📐 Lot Area: {result.lotarea.toLocaleString()} sq ft</div>
+                            )}
+                            {result.yearbuilt && (
+                              <div>📅 Built: {result.yearbuilt}</div>
+                            )}
+                            {result.ownername && (
+                              <div>👤 Owner: {result.ownername.substring(0, 30)}{result.ownername.length > 30 ? '...' : ''}</div>
+                            )}
+                          </>
+                        )}
+                        
+                        {primaryLayer === 'censusBlocks' && (
+                          <>
+                            {result.geoid && (
+                              <div>📊 GEOID: {result.geoid}</div>
+                            )}
+                            {result.totalPopulation && (
+                              <div>👥 Population: {result.totalPopulation.toLocaleString()}</div>
+                            )}
+                            {result.medianHouseholdIncome && (
+                              <div>💰 Median Income: ${result.medianHouseholdIncome.toLocaleString()}</div>
                             )}
                           </>
                         )}

@@ -9,6 +9,7 @@ import {
   gt,
   gte,
   inArray,
+  isNotNull,
   lt,
   lte,
   type SQL,
@@ -43,6 +44,8 @@ import {
   type NYCPark,
   nycCensusBlocks,
   type NYCCensusBlock,
+  nycMapPLUTO,
+  type NYCMapPLUTO,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -2001,6 +2004,129 @@ export async function getNYCCensusBlocksWithGrowth({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to fetch NYC census blocks with growth data',
+    );
+  }
+}
+
+// MapPLUTO (Property Data) Functions
+export async function getAllMapPLUTO({
+  limit = 50,
+}: {
+  limit?: number;
+} = {}) {
+  try {
+    return await db
+      .select()
+      .from(nycMapPLUTO)
+      .limit(limit);
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get MapPLUTO properties',
+    );
+  }
+}
+
+export async function getMapPLUTOByBBL(bbl: string) {
+  try {
+    const [property] = await db
+      .select()
+      .from(nycMapPLUTO)
+      .where(eq(nycMapPLUTO.bbl, bbl));
+    return property || null;
+  } catch (error) {
+    console.error('Database error in getMapPLUTOByBBL:', error);
+    return null;
+  }
+}
+
+// Get MapPLUTO properties with their GeoJSON data for map rendering
+export async function getMapPLUTOWithGeoJSON({
+  geojsonDataIds,
+}: {
+  geojsonDataIds: string[];
+}) {
+  try {
+    if (geojsonDataIds.length === 0) return [];
+
+    // Filter out null values and ensure we have valid UUIDs
+    const validIds = geojsonDataIds.filter(id => id !== null && id !== undefined);
+    if (validIds.length === 0) return [];
+
+    const results = await db
+      .select({
+        property: nycMapPLUTO,
+        geojsonData: {
+          id: geojsonData.id,
+          data: geojsonData.data,
+          metadata: geojsonData.metadata,
+        },
+      })
+      .from(nycMapPLUTO)
+      .leftJoin(geojsonData, eq(nycMapPLUTO.geojsonDataId, geojsonData.id))
+      .where(
+        and(
+          isNotNull(nycMapPLUTO.geojsonDataId),
+          inArray(nycMapPLUTO.geojsonDataId, validIds)
+        )
+      );
+
+    return results.map((result) => ({
+      ...result.property,
+      geojson: result.geojsonData?.data || null,
+    }));
+  } catch (error) {
+    console.error('Database error in getMapPLUTOWithGeoJSON:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get MapPLUTO properties with GeoJSON data'
+    );
+  }
+}
+
+// Get all MapPLUTO properties with GeoJSON for spatial analysis
+export async function getAllMapPLUTOWithGeoJSON({
+  borough,
+  limit = 200,
+}: {
+  borough?: string;
+  limit?: number;
+}) {
+  try {
+    let query = db
+      .select({
+        property: nycMapPLUTO,
+        geojsonData: {
+          id: geojsonData.id,
+          data: geojsonData.data,
+          metadata: geojsonData.metadata,
+        },
+      })
+      .from(nycMapPLUTO)
+      .leftJoin(geojsonData, eq(nycMapPLUTO.geojsonDataId, geojsonData.id))
+      .where(isNotNull(nycMapPLUTO.geojsonDataId))
+      .limit(limit);
+
+    if (borough) {
+      query = query.where(
+        and(
+          isNotNull(nycMapPLUTO.geojsonDataId),
+          eq(nycMapPLUTO.borough, borough)
+        )
+      );
+    }
+
+    const results = await query;
+
+    return results.map((result) => ({
+      ...result.property,
+      geojson: result.geojsonData?.data || null,
+    }));
+  } catch (error) {
+    console.error('Database error in getAllMapPLUTOWithGeoJSON:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get all MapPLUTO properties with GeoJSON data'
     );
   }
 }

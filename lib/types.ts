@@ -16,6 +16,7 @@ import type { nycSchoolZones } from './ai/tools/nyc-school-zones';
 import type { nycParks } from './ai/tools/nyc-parks';
 import type { spatialAnalysis } from './ai/tools/spatial-analysis';
 import type { nycCensus } from './ai/tools/nyc-census';
+import type { mappluto } from './ai/tools/mappluto';
 
 export type DataPart = { type: 'append-message'; message: string };
 
@@ -40,6 +41,7 @@ type nycSchoolZonesTool = InferUITool<typeof nycSchoolZones>;
 type nycParksTool = InferUITool<typeof nycParks>;
 type spatialAnalysisTool = InferUITool<typeof spatialAnalysis>;
 type nycCensusTool = InferUITool<typeof nycCensus>;
+type mapplutoTool = InferUITool<typeof mappluto>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -56,6 +58,7 @@ export type ChatTools = {
   nycParks: nycParksTool;
   spatialAnalysis: spatialAnalysisTool;
   nycCensus: nycCensusTool;
+  mappluto: mapplutoTool;
 };
 
 export type CustomUIDataTypes = {

@@ -8,6 +8,7 @@ import { useSchoolZonesFromMessages } from '@/hooks/use-school-zones';
 import { useParksFromMessages } from '@/hooks/use-parks';
 import { useSpatialAnalysisFromMessages } from '@/hooks/use-spatial-analysis';
 import { useCensusFromMessages } from '@/hooks/use-census';
+import { useMapPLUTOFromMessages } from '@/hooks/use-mappluto';
 import type { ChatMessage } from '@/lib/types';
 
 // Dynamically import the map components to avoid SSR issues
@@ -53,6 +54,9 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
   const { parks, isVisible: parksVisible } = useParksFromMessages(messages, chatId);
   const { spatialResults, isVisible: spatialResultsVisible } = useSpatialAnalysisFromMessages(messages, chatId);
   const { censusBlocks, isVisible: censusBlocksVisible } = useCensusFromMessages(messages, chatId);
+  const { properties: mapplutoProperties, isVisible: mapplutoVisible } = useMapPLUTOFromMessages(messages, chatId);
+
+
 
   useEffect(() => {
     setIsClient(true);
@@ -330,6 +334,99 @@ export function AreaMap({ chatId, messages }: AreaMapProps) {
               />
             )
           ))}
+
+          {/* MapPLUTO Properties Layer - Green markers for properties */}
+          {mapplutoVisible && mapplutoProperties.map((property) => {
+            // Use geojson if available, otherwise fall back to lat/lng point
+            if (property.geojson && property.geojson.geometry) {
+              return (
+                <GeoJSON
+                  key={`mappluto-${property.id}`}
+                  data={property.geojson}
+                  style={{
+                    color: '#22c55e', // Green color for properties
+                    weight: 2,
+                    opacity: 0.9,
+                    fillColor: '#22c55e',
+                    fillOpacity: 0.3,
+                  }}
+                  onEachFeature={(feature, layer) => {
+                    const propertyName = property.address || `BBL ${property.bbl}`;
+                    const popupContent = `
+                      <div class="p-3 min-w-[200px]">
+                        <h3 class="font-semibold text-sm text-green-800 mb-1">
+                          🏢 ${propertyName}
+                        </h3>
+                        <div class="text-xs text-green-600 mb-2">
+                          Brooklyn Property Boundary
+                        </div>
+                        <div class="space-y-1 text-xs">
+                          <div><strong>BBL:</strong> ${property.bbl}</div>
+                          ${property.address ? `<div><strong>Address:</strong> ${property.address}</div>` : ''}
+                          ${property.assesstot ? `<div><strong>Assessment:</strong> $${property.assesstot.toLocaleString()}</div>` : ''}
+                          ${property.lotarea ? `<div><strong>Lot Area:</strong> ${property.lotarea.toLocaleString()} sq ft</div>` : ''}
+                          ${property.bldgclass ? `<div><strong>Building Class:</strong> ${property.bldgclass}</div>` : ''}
+                          ${property.landuse ? `<div><strong>Land Use:</strong> ${property.landuse}</div>` : ''}
+                          ${property.zonedist1 ? `<div><strong>Primary Zoning:</strong> ${property.zonedist1}</div>` : ''}
+                          ${property.zonedist2 ? `<div><strong>Secondary Zoning:</strong> ${property.zonedist2}</div>` : ''}
+                          ${property.zonedist3 ? `<div><strong>Tertiary Zoning:</strong> ${property.zonedist3}</div>` : ''}
+                          ${property.zonedist4 ? `<div><strong>Quaternary Zoning:</strong> ${property.zonedist4}</div>` : ''}
+                          ${property.yearbuilt ? `<div><strong>Year Built:</strong> ${property.yearbuilt}</div>` : ''}
+                          ${property.ownername ? `<div><strong>Owner:</strong> ${property.ownername.substring(0, 30)}${property.ownername.length > 30 ? '...' : ''}</div>` : ''}
+                          ${property.numbldgs ? `<div><strong>Buildings:</strong> ${property.numbldgs}</div>` : ''}
+                          ${property.unitstotal ? `<div><strong>Units:</strong> ${property.unitstotal}</div>` : ''}
+                        </div>
+                      </div>
+                    `;
+                    layer.bindPopup(popupContent);
+                  }}
+                />
+              );
+            } else if (property.geojson?.properties?.latitude && property.geojson?.properties?.longitude) {
+              // Fallback to point marker if no geometry but we have lat/lng
+              const lat = parseFloat(property.geojson.properties.latitude);
+              const lng = parseFloat(property.geojson.properties.longitude);
+              
+              if (!isNaN(lat) && !isNaN(lng)) {
+                return (
+                  <Marker
+                    key={`mappluto-point-${property.id}`}
+                    position={[lat, lng]}
+                  >
+                    <Popup>
+                      <div className="p-3 min-w-[200px]">
+                        <h3 className="font-semibold text-sm text-green-800 mb-1">
+                          📍 {property.address || `BBL ${property.bbl}`}
+                        </h3>
+                        <div className="text-xs text-orange-600 mb-2">
+                          Brooklyn Property (Point Location - Boundary Data Missing)
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div><strong>BBL:</strong> {property.bbl}</div>
+                          {property.address && <div><strong>Address:</strong> {property.address}</div>}
+                          {property.assesstot && <div><strong>Assessment:</strong> ${property.assesstot.toLocaleString()}</div>}
+                          {property.lotarea && <div><strong>Lot Area:</strong> {property.lotarea.toLocaleString()} sq ft</div>}
+                          {property.bldgclass && <div><strong>Building Class:</strong> {property.bldgclass}</div>}
+                          {property.landuse && <div><strong>Land Use:</strong> {property.landuse}</div>}
+                          {property.zonedist1 && <div><strong>Primary Zoning:</strong> {property.zonedist1}</div>}
+                          {property.zonedist2 && <div><strong>Secondary Zoning:</strong> {property.zonedist2}</div>}
+                          {property.zonedist3 && <div><strong>Tertiary Zoning:</strong> {property.zonedist3}</div>}
+                          {property.zonedist4 && <div><strong>Quaternary Zoning:</strong> {property.zonedist4}</div>}
+                          {property.yearbuilt && <div><strong>Year Built:</strong> {property.yearbuilt}</div>}
+                          {property.ownername && (
+                            <div><strong>Owner:</strong> {property.ownername.substring(0, 30)}{property.ownername.length > 30 ? '...' : ''}</div>
+                          )}
+                          {property.numbldgs && <div><strong>Buildings:</strong> {property.numbldgs}</div>}
+                          {property.unitstotal && <div><strong>Units:</strong> {property.unitstotal}</div>}
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              }
+            }
+            return null;
+          })}
         </MapContainer>
       </div>
     </Card>

@@ -106,6 +106,34 @@
       "when": 1755135040998,
       "tag": "0017_moaning_rocket_racer",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1755204773146,
+      "tag": "0018_confused_gorgon",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1755215982657,
+      "tag": "0019_normal_micromax",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1755216019249,
+      "tag": "0020_powerful_ghost_rider",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1755225918680,
+      "tag": "0021_numerous_zzzax",
+      "breakpoints": true
     }
   ]
 }

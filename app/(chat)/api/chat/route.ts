@@ -30,6 +30,7 @@ import { nycSchoolZones } from '@/lib/ai/tools/nyc-school-zones';
 import { nycParks } from '@/lib/ai/tools/nyc-parks';
 import { spatialAnalysis } from '@/lib/ai/tools/spatial-analysis';
 import { nycCensus } from '@/lib/ai/tools/nyc-census';
+import { mappluto } from '@/lib/ai/tools/mappluto';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -180,8 +181,9 @@ export async function POST(request: Request) {
                   'nycNeighborhoods',
                   'nycSchoolZones',
                   'nycParks',
-                                      'spatialAnalysis',
-                    'nycCensus',
+                  'spatialAnalysis',
+                  'nycCensus',
+                  'mappluto',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
@@ -204,6 +206,7 @@ export async function POST(request: Request) {
             nycParks,
             spatialAnalysis,
             nycCensus,
+            mappluto,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

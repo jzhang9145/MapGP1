@@ -1,0 +1,2299 @@
+{
+  "id": "88183973-973d-4a63-b4c3-f6cf621dd9e0",
+  "prevId": "ddd12cf3-e3c3-45a3-b8a7-0a01ffc46e1d",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.Area": {
+      "name": "Area",
+      "schema": "",
+      "columns": {
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Area_chatId_Chat_id_fk": {
+          "name": "Area_chatId_Chat_id_fk",
+          "tableFrom": "Area",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Area_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "Area_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "Area",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Chat": {
+      "name": "Chat",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Chat_userId_User_id_fk": {
+          "name": "Chat_userId_User_id_fk",
+          "tableFrom": "Chat",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Document": {
+      "name": "Document",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "text": {
+          "name": "text",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'text'"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Document_userId_User_id_fk": {
+          "name": "Document_userId_User_id_fk",
+          "tableFrom": "Document",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "Document_id_createdAt_pk": {
+          "name": "Document_id_createdAt_pk",
+          "columns": [
+            "id",
+            "createdAt"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.GeoJSONData": {
+      "name": "GeoJSONData",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data": {
+          "name": "data",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Message_v2": {
+      "name": "Message_v2",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parts": {
+          "name": "parts",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attachments": {
+          "name": "attachments",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Message_v2_chatId_Chat_id_fk": {
+          "name": "Message_v2_chatId_Chat_id_fk",
+          "tableFrom": "Message_v2",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Message": {
+      "name": "Message",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Message_chatId_Chat_id_fk": {
+          "name": "Message_chatId_Chat_id_fk",
+          "tableFrom": "Message",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.NYCCensusBlocks": {
+      "name": "NYCCensusBlocks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "geoid": {
+          "name": "geoid",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dataYear": {
+          "name": "dataYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 2023
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "county": {
+          "name": "county",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tract": {
+          "name": "tract",
+          "type": "varchar(6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block": {
+          "name": "block",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "totalPopulation": {
+          "name": "totalPopulation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "totalHouseholds": {
+          "name": "totalHouseholds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occupiedHouseholds": {
+          "name": "occupiedHouseholds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vacantHouseholds": {
+          "name": "vacantHouseholds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "medianHouseholdIncome": {
+          "name": "medianHouseholdIncome",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "totalHousingUnits": {
+          "name": "totalHousingUnits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ownerOccupied": {
+          "name": "ownerOccupied",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "renterOccupied": {
+          "name": "renterOccupied",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "medianAge": {
+          "name": "medianAge",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "whiteAlone": {
+          "name": "whiteAlone",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blackAlone": {
+          "name": "blackAlone",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "asianAlone": {
+          "name": "asianAlone",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hispanicLatino": {
+          "name": "hispanicLatino",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bachelorsOrHigher": {
+          "name": "bachelorsOrHigher",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unemploymentRate": {
+          "name": "unemploymentRate",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Brooklyn'"
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "NYCCensusBlocks_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "NYCCensusBlocks_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "NYCCensusBlocks",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "NYCCensusBlocks_geoid_dataYear_unique": {
+          "name": "NYCCensusBlocks_geoid_dataYear_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "geoid",
+            "dataYear"
+          ]
+        }
+      }
+    },
+    "public.NYCMapPLUTO": {
+      "name": "NYCMapPLUTO",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "bbl": {
+          "name": "bbl",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block": {
+          "name": "block",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lot": {
+          "name": "lot",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cd": {
+          "name": "cd",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgclass": {
+          "name": "bldgclass",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landuse": {
+          "name": "landuse",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ownertype": {
+          "name": "ownertype",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ownername": {
+          "name": "ownername",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotarea": {
+          "name": "lotarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgarea": {
+          "name": "bldgarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comarea": {
+          "name": "comarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resarea": {
+          "name": "resarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "officearea": {
+          "name": "officearea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retailarea": {
+          "name": "retailarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "garagearea": {
+          "name": "garagearea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strgearea": {
+          "name": "strgearea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factryarea": {
+          "name": "factryarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "otherarea": {
+          "name": "otherarea",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "areasource": {
+          "name": "areasource",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numbldgs": {
+          "name": "numbldgs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numfloors": {
+          "name": "numfloors",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unitsres": {
+          "name": "unitsres",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unitstotal": {
+          "name": "unitstotal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotfront": {
+          "name": "lotfront",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotdepth": {
+          "name": "lotdepth",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgfront": {
+          "name": "bldgfront",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgdepth": {
+          "name": "bldgdepth",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ext": {
+          "name": "ext",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proxcode": {
+          "name": "proxcode",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "irrlotcode": {
+          "name": "irrlotcode",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lottype": {
+          "name": "lottype",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bsmtcode": {
+          "name": "bsmtcode",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assessland": {
+          "name": "assessland",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assesstot": {
+          "name": "assesstot",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exempttot": {
+          "name": "exempttot",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearbuilt": {
+          "name": "yearbuilt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearalter1": {
+          "name": "yearalter1",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearalter2": {
+          "name": "yearalter2",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "histdist": {
+          "name": "histdist",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landmark": {
+          "name": "landmark",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "builtfar": {
+          "name": "builtfar",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "residfar": {
+          "name": "residfar",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commfar": {
+          "name": "commfar",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facilfar": {
+          "name": "facilfar",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "borocode": {
+          "name": "borocode",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "condono": {
+          "name": "condono",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tract2010": {
+          "name": "tract2010",
+          "type": "varchar(6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xcoord": {
+          "name": "xcoord",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ycoord": {
+          "name": "ycoord",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zonemap": {
+          "name": "zonemap",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zmcode": {
+          "name": "zmcode",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sanborn": {
+          "name": "sanborn",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "taxmap": {
+          "name": "taxmap",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edesignum": {
+          "name": "edesignum",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "appbbl": {
+          "name": "appbbl",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "appdate": {
+          "name": "appdate",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plutomapid": {
+          "name": "plutomapid",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zipcode": {
+          "name": "zipcode",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mappluto_bbl_idx": {
+          "name": "mappluto_bbl_idx",
+          "columns": [
+            {
+              "expression": "bbl",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mappluto_borough_idx": {
+          "name": "mappluto_borough_idx",
+          "columns": [
+            {
+              "expression": "borough",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mappluto_bldgclass_idx": {
+          "name": "mappluto_bldgclass_idx",
+          "columns": [
+            {
+              "expression": "bldgclass",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mappluto_landuse_idx": {
+          "name": "mappluto_landuse_idx",
+          "columns": [
+            {
+              "expression": "landuse",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mappluto_assessment_idx": {
+          "name": "mappluto_assessment_idx",
+          "columns": [
+            {
+              "expression": "assesstot",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mappluto_yearbuilt_idx": {
+          "name": "mappluto_yearbuilt_idx",
+          "columns": [
+            {
+              "expression": "yearbuilt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "NYCMapPLUTO_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "NYCMapPLUTO_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "NYCMapPLUTO",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.NYCNeighborhoods": {
+      "name": "NYCNeighborhoods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nta_code": {
+          "name": "nta_code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nta_name": {
+          "name": "nta_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nta_2020": {
+          "name": "nta_2020",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cdtca": {
+          "name": "cdtca",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cdtca_name": {
+          "name": "cdtca_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "center_latitude": {
+          "name": "center_latitude",
+          "type": "numeric(10, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "center_longitude": {
+          "name": "center_longitude",
+          "type": "numeric(11, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shape_area": {
+          "name": "shape_area",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shape_leng": {
+          "name": "shape_leng",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "NYCNeighborhoods_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "NYCNeighborhoods_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "NYCNeighborhoods",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.NYCParks": {
+      "name": "NYCParks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gispropnum": {
+          "name": "gispropnum",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signname": {
+          "name": "signname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "borocode": {
+          "name": "borocode",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "communityboard": {
+          "name": "communityboard",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "councildistrict": {
+          "name": "councildistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "policepreinct": {
+          "name": "policepreinct",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assemblydistrict": {
+          "name": "assemblydistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "congressionaldistrict": {
+          "name": "congressionaldistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "senateDistrict": {
+          "name": "senateDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zipcode": {
+          "name": "zipcode",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "acreage": {
+          "name": "acreage",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "typecategory": {
+          "name": "typecategory",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landuse": {
+          "name": "landuse",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "department": {
+          "name": "department",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jurisdiction": {
+          "name": "jurisdiction",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retired": {
+          "name": "retired",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waterfront": {
+          "name": "waterfront",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "NYCParks_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "NYCParks_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "NYCParks",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.NYCSchoolZones": {
+      "name": "NYCSchoolZones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dbn": {
+          "name": "dbn",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schoolName": {
+          "name": "schoolName",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schoolDistrict": {
+          "name": "schoolDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "boroNum": {
+          "name": "boroNum",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "initials": {
+          "name": "initials",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zonedDist": {
+          "name": "zonedDist",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "esidNo": {
+          "name": "esidNo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shapeArea": {
+          "name": "shapeArea",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shapeLength": {
+          "name": "shapeLength",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xCentroid": {
+          "name": "xCentroid",
+          "type": "numeric(15, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yCentroid": {
+          "name": "yCentroid",
+          "type": "numeric(15, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remarks": {
+          "name": "remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createDate": {
+          "name": "createDate",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "editDate": {
+          "name": "editDate",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "NYCSchoolZones_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "NYCSchoolZones_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "NYCSchoolZones",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.PlutoLots": {
+      "name": "PlutoLots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "bbl": {
+          "name": "bbl",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "borough": {
+          "name": "borough",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block": {
+          "name": "block",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lot": {
+          "name": "lot",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zipcode": {
+          "name": "zipcode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ownerName": {
+          "name": "ownerName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ownerType": {
+          "name": "ownerType",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landUse": {
+          "name": "landUse",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landUseCode": {
+          "name": "landUseCode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buildingClass": {
+          "name": "buildingClass",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buildingClassCode": {
+          "name": "buildingClassCode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearBuilt": {
+          "name": "yearBuilt",
+          "type": "numeric(4, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearAltered": {
+          "name": "yearAltered",
+          "type": "numeric(4, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numFloors": {
+          "name": "numFloors",
+          "type": "numeric(5, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numStories": {
+          "name": "numStories",
+          "type": "numeric(5, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotArea": {
+          "name": "lotArea",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgArea": {
+          "name": "bldgArea",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commFAR": {
+          "name": "commFAR",
+          "type": "numeric(8, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resFAR": {
+          "name": "resFAR",
+          "type": "numeric(8, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facilFAR": {
+          "name": "facilFAR",
+          "type": "numeric(8, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgFront": {
+          "name": "bldgFront",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgDepth": {
+          "name": "bldgDepth",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotFront": {
+          "name": "lotFront",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotDepth": {
+          "name": "lotDepth",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bldgClass": {
+          "name": "bldgClass",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tract2010": {
+          "name": "tract2010",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "xCoord": {
+          "name": "xCoord",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yCoord": {
+          "name": "yCoord",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(10, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(11, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "councilDistrict": {
+          "name": "councilDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "communityDistrict": {
+          "name": "communityDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "policePrecinct": {
+          "name": "policePrecinct",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fireCompany": {
+          "name": "fireCompany",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fireBattalion": {
+          "name": "fireBattalion",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fireDivision": {
+          "name": "fireDivision",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "healthArea": {
+          "name": "healthArea",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "healthCenterDistrict": {
+          "name": "healthCenterDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schoolDistrict": {
+          "name": "schoolDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voterPrecinct": {
+          "name": "voterPrecinct",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "electionDistrict": {
+          "name": "electionDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assemblyDistrict": {
+          "name": "assemblyDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "senateDistrict": {
+          "name": "senateDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "congressionalDistrict": {
+          "name": "congressionalDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sanitationDistrict": {
+          "name": "sanitationDistrict",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sanitationSub": {
+          "name": "sanitationSub",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zoningDistrict": {
+          "name": "zoningDistrict",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overlayDistrict1": {
+          "name": "overlayDistrict1",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overlayDistrict2": {
+          "name": "overlayDistrict2",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "specialDistrict1": {
+          "name": "specialDistrict1",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "specialDistrict2": {
+          "name": "specialDistrict2",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "specialDistrict3": {
+          "name": "specialDistrict3",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "easements": {
+          "name": "easements",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landmark": {
+          "name": "landmark",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "far": {
+          "name": "far",
+          "type": "numeric(8, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "irrLotCode": {
+          "name": "irrLotCode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lotType": {
+          "name": "lotType",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bsmtCode": {
+          "name": "bsmtCode",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assessLand": {
+          "name": "assessLand",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assessTot": {
+          "name": "assessTot",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exemptLand": {
+          "name": "exemptLand",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exemptTot": {
+          "name": "exemptTot",
+          "type": "numeric(15, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearAlter1": {
+          "name": "yearAlter1",
+          "type": "numeric(4, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yearAlter2": {
+          "name": "yearAlter2",
+          "type": "numeric(4, 0)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "histDist": {
+          "name": "histDist",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lstAction": {
+          "name": "lstAction",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lstStatus": {
+          "name": "lstStatus",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lstDate": {
+          "name": "lstDate",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lstReason": {
+          "name": "lstReason",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geojsonDataId": {
+          "name": "geojsonDataId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "PlutoLots_geojsonDataId_GeoJSONData_id_fk": {
+          "name": "PlutoLots_geojsonDataId_GeoJSONData_id_fk",
+          "tableFrom": "PlutoLots",
+          "tableTo": "GeoJSONData",
+          "columnsFrom": [
+            "geojsonDataId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "PlutoLots_bbl_unique": {
+          "name": "PlutoLots_bbl_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bbl"
+          ]
+        }
+      }
+    },
+    "public.Stream": {
+      "name": "Stream",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Stream_chatId_Chat_id_fk": {
+          "name": "Stream_chatId_Chat_id_fk",
+          "tableFrom": "Stream",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "Stream_id_pk": {
+          "name": "Stream_id_pk",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.Suggestion": {
+      "name": "Suggestion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "documentId": {
+          "name": "documentId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "documentCreatedAt": {
+          "name": "documentCreatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "originalText": {
+          "name": "originalText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suggestedText": {
+          "name": "suggestedText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isResolved": {
+          "name": "isResolved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Suggestion_userId_User_id_fk": {
+          "name": "Suggestion_userId_User_id_fk",
+          "tableFrom": "Suggestion",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Suggestion_documentId_documentCreatedAt_Document_id_createdAt_fk": {
+          "name": "Suggestion_documentId_documentCreatedAt_Document_id_createdAt_fk",
+          "tableFrom": "Suggestion",
+          "tableTo": "Document",
+          "columnsFrom": [
+            "documentId",
+            "documentCreatedAt"
+          ],
+          "columnsTo": [
+            "id",
+            "createdAt"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "Suggestion_id_pk": {
+          "name": "Suggestion_id_pk",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.User": {
+      "name": "User",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Vote_v2": {
+      "name": "Vote_v2",
+      "schema": "",
+      "columns": {
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "messageId": {
+          "name": "messageId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "isUpvoted": {
+          "name": "isUpvoted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Vote_v2_chatId_Chat_id_fk": {
+          "name": "Vote_v2_chatId_Chat_id_fk",
+          "tableFrom": "Vote_v2",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Vote_v2_messageId_Message_v2_id_fk": {
+          "name": "Vote_v2_messageId_Message_v2_id_fk",
+          "tableFrom": "Vote_v2",
+          "tableTo": "Message_v2",
+          "columnsFrom": [
+            "messageId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "Vote_v2_chatId_messageId_pk": {
+          "name": "Vote_v2_chatId_messageId_pk",
+          "columns": [
+            "chatId",
+            "messageId"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.Vote": {
+      "name": "Vote",
+      "schema": "",
+      "columns": {
+        "chatId": {
+          "name": "chatId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "messageId": {
+          "name": "messageId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "isUpvoted": {
+          "name": "isUpvoted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Vote_chatId_Chat_id_fk": {
+          "name": "Vote_chatId_Chat_id_fk",
+          "tableFrom": "Vote",
+          "tableTo": "Chat",
+          "columnsFrom": [
+            "chatId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Vote_messageId_Message_id_fk": {
+          "name": "Vote_messageId_Message_id_fk",
+          "tableFrom": "Vote",
+          "tableTo": "Message",
+          "columnsFrom": [
+            "messageId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "Vote_chatId_messageId_pk": {
+          "name": "Vote_chatId_messageId_pk",
+          "columns": [
+            "chatId",
+            "messageId"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

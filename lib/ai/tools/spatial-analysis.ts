@@ -5,6 +5,7 @@ import {
   getNYCParksWithGeoJSON,
   getNYCSchoolZonesWithGeoJSON,
   getNYCCensusBlocksWithGeoJSON,
+  getAllMapPLUTOWithGeoJSON,
   getGeoJSONDataById
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
@@ -58,11 +59,14 @@ function polygonsIntersect(poly1: number[][][], poly2: number[][][]): boolean {
 
 export const spatialAnalysis = tool({
   description: 
-    'Perform true spatial analysis between NYC data layers using GeoJSON boundaries. ' +
-    'Finds parks within neighborhoods, school zones in specific areas, census blocks in neighborhoods using actual geometric intersection. ' +
-    'Uses neighborhood GeoJSON boundaries as spatial filters to find overlapping features.',
+    'Perform spatial analysis to find features within NYC neighborhoods or areas using GeoJSON boundaries. ' +
+    'USE THIS TOOL when user asks for properties/buildings/parks/schools "in [NEIGHBORHOOD]" or "within [AREA]". ' +
+    'Examples: "properties in Park Slope", "buildings in DUMBO", "parks in Carroll Gardens". ' +
+    'Finds parks, properties, school zones, or census blocks that spatially intersect with neighborhood boundaries. ' +
+    'Can find properties by location, zoning type, building class within specific neighborhoods. ' +
+    'Performs true geometric intersection using GeoJSON polygon boundaries.',
   inputSchema: z.object({
-    primaryLayer: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks']).describe(
+    primaryLayer: z.enum(['parks', 'neighborhoods', 'schoolZones', 'censusBlocks', 'properties']).describe(
       'The main layer to search for results in'
     ),
     filterValue: z.string().describe(
@@ -311,7 +315,7 @@ export const spatialAnalysis = tool({
 
       } else if (primaryLayer === 'neighborhoods') {
         // Return the filter neighborhood itself plus nearby ones
-        const allNeighborhoods = await searchNYCNeighborhoods('');
+        const allNeighborhoods = await searchNYCNeighborhoods({ searchTerm: '' });
         
         for (const neighborhood of allNeighborhoods.slice(0, 50)) {
           if (!neighborhood.geojsonDataId) continue;
@@ -457,6 +461,141 @@ export const spatialAnalysis = tool({
         }
 
         console.log(`📊 Found ${results.length} census blocks intersecting ${filterDescription}`);
+
+      } else if (primaryLayer === 'properties') {
+        // Get all MapPLUTO properties and check intersection
+        const boroughCode = getBoroughCodeFromNeighborhood(filterDescription);
+        let boroughName = 'Brooklyn'; // Default to Brooklyn since that's what we have data for
+        
+        if (boroughCode === 'M') boroughName = 'Manhattan';
+        else if (boroughCode === 'B') boroughName = 'Brooklyn'; 
+        else if (boroughCode === 'Q') boroughName = 'Queens';
+        else if (boroughCode === 'X') boroughName = 'Bronx';
+        else if (boroughCode === 'R') boroughName = 'Staten Island';
+
+        const allProperties = await getAllMapPLUTOWithGeoJSON({
+          borough: boroughName,
+          limit: 300 // Get more properties to check spatially
+        });
+
+        console.log(`📍 Checking ${allProperties.length} properties for spatial intersection...`);
+        
+        let checkedCount = 0;
+        let propertiesWithGeoJSON = 0;
+        let validPolygonCount = 0;
+
+        for (const property of allProperties) {
+          checkedCount++;
+          
+          if (!property.geojson) {
+            if (checkedCount <= 3) {
+              console.log(`❌ Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - No GeoJSON`);
+            }
+            continue;
+          }
+          
+          propertiesWithGeoJSON++;
+          
+          // Log geometry type for first few properties
+          if (checkedCount <= 5) {
+            console.log(`🔍 Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - Geometry type: ${property.geojson.type}`);
+          }
+
+          // Handle GeoJSON Feature vs direct geometry
+          let geometry = property.geojson;
+          if (property.geojson.type === 'Feature') {
+            geometry = property.geojson.geometry;
+            if (checkedCount <= 3) {
+              console.log(`📍 Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - Feature with geometry type: ${geometry?.type}`);
+            }
+          }
+
+          if (!geometry || !geometry.type) {
+            if (checkedCount <= 3) {
+              console.log(`❌ Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - No valid geometry`);
+            }
+            continue;
+          }
+
+          let propertyPolygon: number[][][] | null = null;
+          if (geometry.type === 'Polygon') {
+            propertyPolygon = geometry.coordinates;
+          } else if (geometry.type === 'MultiPolygon') {
+            propertyPolygon = geometry.coordinates[0];
+          } else if (geometry.type === 'Point') {
+            // Handle Point geometry - check if point is inside polygon
+            const point = geometry.coordinates;
+            if (checkedCount <= 3) {
+              console.log(`📍 Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - Point [${point[0]}, ${point[1]}]`);
+            }
+            if (pointInPolygon(point, filterPolygon)) {
+              console.log(`✅ Point property intersects: ${property.address || `BBL ${property.bbl}`} at [${point[0]}, ${point[1]}]`);
+              results.push({
+                id: property.id,
+                layerType: 'properties',
+                name: property.address || `Block ${property.block}, Lot ${property.lot}`,
+                bbl: property.bbl,
+                address: property.address,
+                borough: property.borough,
+                ownername: property.ownername,
+                bldgclass: property.bldgclass,
+                landuse: property.landuse,
+                zonedist1: property.zonedist1,
+                assesstot: property.assesstot,
+                lotarea: property.lotarea,
+                bldgarea: property.bldgarea,
+                yearbuilt: property.yearbuilt,
+                geojson: property.geojson,
+                analysisQuery: `properties within ${filterValue}`,
+                spatialRelation: 'within',
+                filterDescription: filterDescription
+              });
+              if (results.length >= limit) break;
+            }
+            continue;
+          }
+
+          if (propertyPolygon) {
+            validPolygonCount++;
+            if (checkedCount <= 3) {
+              console.log(`📍 Property ${checkedCount}: ${property.address || `BBL ${property.bbl}`} - ${property.geojson.type} with ${propertyPolygon.length} rings`);
+            }
+          }
+
+          if (propertyPolygon && polygonsIntersect(filterPolygon, propertyPolygon)) {
+            console.log(`✅ Property intersects: ${property.address || `BBL ${property.bbl}`}`);
+            
+            results.push({
+              id: property.id,
+              layerType: 'properties',
+              name: property.address || `Block ${property.block}, Lot ${property.lot}`,
+              bbl: property.bbl,
+              address: property.address,
+              borough: property.borough,
+              ownername: property.ownername,
+              bldgclass: property.bldgclass,
+              landuse: property.landuse,
+              zonedist1: property.zonedist1,
+              assesstot: property.assesstot,
+              lotarea: property.lotarea,
+              bldgarea: property.bldgarea,
+              yearbuilt: property.yearbuilt,
+              geojson: property.geojson,
+              analysisQuery: `properties intersecting ${filterValue}`,
+              spatialRelation: 'intersects',
+              filterDescription: filterDescription
+            });
+
+            if (results.length >= limit) break;
+          }
+        }
+
+        console.log(`📊 Property Spatial Analysis Summary:`);
+        console.log(`   - Total properties checked: ${checkedCount}`);
+        console.log(`   - Properties with GeoJSON: ${propertiesWithGeoJSON}`);
+        console.log(`   - Valid polygons: ${validPolygonCount}`);
+        console.log(`   - Results found: ${results.length}`);
+        console.log(`📊 Found ${results.length} properties intersecting ${filterDescription}`);
       }
 
       return {

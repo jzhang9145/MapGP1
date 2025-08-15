@@ -2,8 +2,234 @@ import { tool } from 'ai';
 import { mapplutoResponseSchema } from '@/lib/schemas';
 import { ChatSDKError } from '@/lib/errors';
 import { z } from 'zod';
-import { getAllMapPLUTO } from '@/lib/db/queries';
 import { getPropertyDescription, getPropertyIcon, formatAssessment, formatArea } from '@/lib/schemas/mappluto';
+
+// Function to fetch MapPLUTO data directly from NYC APIs
+async function fetchMapPLUTOFromAPI(filters: {
+  searchTerm?: string;
+  buildingClass?: string;
+  landUse?: string;
+  ownerType?: string;
+  minAssessment?: number;
+  maxAssessment?: number;
+  minLotArea?: number;
+  maxLotArea?: number;
+  minBuildingArea?: number;
+  maxBuildingArea?: number;
+  minYearBuilt?: number;
+  maxYearBuilt?: number;
+  minUnits?: number;
+  maxUnits?: number;
+  isVacant?: boolean;
+  limit: number;
+  sortBy: string;
+}) {
+  try {
+    // NYC Open Data MapPLUTO API endpoint
+    const baseUrl = 'https://data.cityofnewyork.us/resource/64uk-42ks.json';
+    const params = new URLSearchParams();
+    
+    // Always filter to Brooklyn first
+    params.append('borough', 'BK');
+    
+    // Add filters as SoQL query parameters
+    const whereConditions: string[] = [];
+    
+    if (filters.buildingClass) {
+      whereConditions.push(`bldgclass='${filters.buildingClass}'`);
+    }
+    
+    if (filters.landUse) {
+      whereConditions.push(`landuse='${filters.landUse}'`);
+    }
+    
+    if (filters.ownerType) {
+      whereConditions.push(`ownertype='${filters.ownerType}'`);
+    }
+    
+    if (filters.minAssessment) {
+      whereConditions.push(`assesstot>=${filters.minAssessment}`);
+    }
+    
+    if (filters.maxAssessment) {
+      whereConditions.push(`assesstot<=${filters.maxAssessment}`);
+    }
+    
+    if (filters.minLotArea) {
+      whereConditions.push(`lotarea>=${filters.minLotArea}`);
+    }
+    
+    if (filters.maxLotArea) {
+      whereConditions.push(`lotarea<=${filters.maxLotArea}`);
+    }
+    
+    if (filters.minBuildingArea) {
+      whereConditions.push(`bldgarea>=${filters.minBuildingArea}`);
+    }
+    
+    if (filters.maxBuildingArea) {
+      whereConditions.push(`bldgarea<=${filters.maxBuildingArea}`);
+    }
+    
+    if (filters.minYearBuilt) {
+      whereConditions.push(`yearbuilt>=${filters.minYearBuilt}`);
+    }
+    
+    if (filters.maxYearBuilt) {
+      whereConditions.push(`yearbuilt<=${filters.maxYearBuilt}`);
+    }
+    
+    if (filters.minUnits) {
+      whereConditions.push(`unitstotal>=${filters.minUnits}`);
+    }
+    
+    if (filters.maxUnits) {
+      whereConditions.push(`unitstotal<=${filters.maxUnits}`);
+    }
+    
+    if (filters.isVacant) {
+      whereConditions.push(`(bldgclass like 'V%' OR landuse='29')`);
+    }
+    
+    if (filters.searchTerm) {
+      const searchTerm = filters.searchTerm.replace(/'/g, "''"); // Escape quotes
+      whereConditions.push(`(bbl like '%${searchTerm}%' OR address like '%${searchTerm}%' OR ownername like '%${searchTerm}%')`);
+    }
+    
+    // Add where conditions if any
+    if (whereConditions.length > 0) {
+      params.append('$where', whereConditions.join(' AND '));
+    }
+    
+    // Add sorting
+    let orderBy = 'assesstot DESC'; // Default to assessment
+    if (filters.sortBy === 'area') {
+      orderBy = 'lotarea DESC';
+    } else if (filters.sortBy === 'yearBuilt') {
+      orderBy = 'yearbuilt DESC';
+    } else if (filters.sortBy === 'units') {
+      orderBy = 'unitstotal DESC';
+    }
+    params.append('$order', orderBy);
+    
+    // Set limit
+    params.append('$limit', Math.min(filters.limit, 1000).toString());
+    
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log(`🔗 Fetching from NYC API: ${url.substring(0, 150)}...`);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`NYC API request failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid response format from NYC API');
+    }
+    
+    // Transform API response to match our schema
+    return data.map((row: any) => ({
+      id: row.bbl || '', // Use BBL as ID since it's unique
+      bbl: row.bbl || '',
+      borough: 'Brooklyn',
+      block: row.block || null,
+      lot: row.lot || null,
+      cd: row.cd || null,
+      bldgclass: row.bldgclass || null,
+      landuse: row.landuse || null,
+      ownertype: row.ownertype || null,
+      ownername: row.ownername || null,
+      lotarea: row.lotarea ? parseInt(row.lotarea) : null,
+      bldgarea: row.bldgarea ? parseInt(row.bldgarea) : null,
+      comarea: row.comarea ? parseInt(row.comarea) : null,
+      resarea: row.resarea ? parseInt(row.resarea) : null,
+      officearea: row.officearea ? parseInt(row.officearea) : null,
+      retailarea: row.retailarea ? parseInt(row.retailarea) : null,
+      garagearea: row.garagearea ? parseInt(row.garagearea) : null,
+      strgearea: row.strgearea ? parseInt(row.strgearea) : null,
+      factryarea: row.factryarea ? parseInt(row.factryarea) : null,
+      otherarea: row.otherarea ? parseInt(row.otherarea) : null,
+      areasource: row.areasource || null,
+      numbldgs: row.numbldgs ? parseInt(row.numbldgs) : null,
+      numfloors: row.numfloors ? parseFloat(row.numfloors) : null,
+      unitsres: row.unitsres ? parseInt(row.unitsres) : null,
+      unitstotal: row.unitstotal ? parseInt(row.unitstotal) : null,
+      lotfront: row.lotfront ? parseFloat(row.lotfront) : null,
+      lotdepth: row.lotdepth ? parseFloat(row.lotdepth) : null,
+      bldgfront: row.bldgfront ? parseFloat(row.bldgfront) : null,
+      bldgdepth: row.bldgdepth ? parseFloat(row.bldgdepth) : null,
+      ext: row.ext || null,
+      proxcode: row.proxcode || null,
+      irrlotcode: row.irrlotcode || null,
+      lottype: row.lottype || null,
+      bsmtcode: row.bsmtcode || null,
+      assessland: row.assessland ? parseInt(row.assessland) : null,
+      assesstot: row.assesstot ? parseInt(row.assesstot) : null,
+      exempttot: row.exempttot ? parseInt(row.exempttot) : null,
+      yearbuilt: row.yearbuilt ? parseInt(row.yearbuilt) : null,
+      yearalter1: row.yearalter1 ? parseInt(row.yearalter1) : null,
+      yearalter2: row.yearalter2 ? parseInt(row.yearalter2) : null,
+      histdist: row.histdist || null,
+      landmark: row.landmark || null,
+      builtfar: row.builtfar ? parseFloat(row.builtfar) : null,
+      residfar: row.residfar ? parseFloat(row.residfar) : null,
+      commfar: row.commfar ? parseFloat(row.commfar) : null,
+      facilfar: row.facilfar ? parseFloat(row.facilfar) : null,
+      borocode: row.borocode || null,
+      condono: row.condono || null,
+      tract2010: row.tract2010 || null,
+      xcoord: row.xcoord ? parseInt(row.xcoord) : null,
+      ycoord: row.ycoord ? parseInt(row.ycoord) : null,
+      zonemap: row.zonemap || null,
+      zmcode: row.zmcode || null,
+      sanborn: row.sanborn || null,
+      taxmap: row.taxmap || null,
+      edesignum: row.edesignum || null,
+      appbbl: row.appbbl || null,
+      appdate: row.appdate || null,
+      plutomapid: row.plutomapid || null,
+      version: row.version || null,
+      address: row.address || null,
+      zipcode: row.zipcode || null,
+      geojsonDataId: null, // No geometry from this API
+      geojson: null, // No geometry from this simple API call
+    }));
+    
+  } catch (error) {
+    console.error('❌ Error fetching from NYC API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to fetch MapPLUTO data from NYC API: ${errorMessage}`);
+  }
+}
+
+// Optional: Function to get geometry data from ArcGIS if needed
+async function fetchGeometryFromArcGIS(bbl: string) {
+  try {
+    const arcgisUrl = 'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query';
+    const params = new URLSearchParams({
+      where: `BBL = '${bbl}'`,
+      geometryType: "esriGeometryPolygon",
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'geojson',
+      outFields: 'BBL'
+    });
+
+    const response = await fetch(`${arcgisUrl}?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`ArcGIS API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.features?.[0] || null;
+  } catch (error) {
+    console.error(`❌ Error fetching geometry for BBL ${bbl}:`, error);
+    return null;
+  }
+}
 
 export const mappluto = tool({
   description: `
@@ -82,9 +308,9 @@ export const mappluto = tool({
     isVacant,
     limit = 20,
     sortBy = 'assessment'
-  }) => {
+  }): Promise<z.infer<typeof mapplutoResponseSchema>> => {
     try {
-      console.log('🏗️ Querying MapPLUTO properties...', {
+      console.log('🏗️ Querying MapPLUTO properties directly from NYC API...', {
         searchTerm,
         buildingClass,
         landUse,
@@ -93,69 +319,31 @@ export const mappluto = tool({
         limit
       });
 
-      // For now, use the basic query function
-      const results = await getAllMapPLUTO({ limit });
+      // Fetch data directly from NYC Open Data API
+      const results = await fetchMapPLUTOFromAPI({
+        searchTerm,
+        buildingClass,
+        landUse,
+        ownerType,
+        minAssessment,
+        maxAssessment,
+        minLotArea,
+        maxLotArea,
+        minBuildingArea,
+        maxBuildingArea,
+        minYearBuilt,
+        maxYearBuilt,
+        minUnits,
+        maxUnits,
+        isVacant,
+        limit,
+        sortBy
+      });
 
-      console.log(`🏢 Found ${results.length} properties`);
+      console.log(`🏢 Found ${results.length} properties from API`);
 
-      // Apply client-side filtering for now
-      let filteredResults = results;
-      
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        filteredResults = filteredResults.filter(prop =>
-          prop.bbl?.includes(searchTerm) ||
-          prop.address?.toLowerCase().includes(searchLower) ||
-          prop.ownername?.toLowerCase().includes(searchLower) ||
-          // Add building class descriptions for better search
-          (searchLower.includes('office') && ['O', 'I'].some(prefix => prop.bldgclass?.startsWith(prefix))) ||
-          (searchLower.includes('residential') && ['R', 'A', 'B', 'C', 'D'].some(prefix => prop.bldgclass?.startsWith(prefix))) ||
-          (searchLower.includes('commercial') && ['K', 'M', 'O', 'S'].some(prefix => prop.bldgclass?.startsWith(prefix))) ||
-          (searchLower.includes('building') && prop.bldgclass && !prop.bldgclass.startsWith('V')) ||
-          (searchLower.includes('brooklyn') && prop.borough === 'Brooklyn') ||
-          (searchLower.includes('vacant') && (prop.bldgclass?.startsWith('V') || prop.landuse === '29'))
-        );
-      }
-      
-      if (buildingClass) {
-        filteredResults = filteredResults.filter(prop => prop.bldgclass === buildingClass);
-      }
-      
-      if (landUse) {
-        filteredResults = filteredResults.filter(prop => prop.landuse === landUse);
-      }
-      
-      if (ownerType) {
-        filteredResults = filteredResults.filter(prop => prop.ownertype === ownerType);
-      }
-      
-      if (minAssessment) {
-        filteredResults = filteredResults.filter(prop => (prop.assesstot || 0) >= minAssessment);
-      }
-      
-      if (maxAssessment) {
-        filteredResults = filteredResults.filter(prop => (prop.assesstot || 0) <= maxAssessment);
-      }
-      
-      if (isVacant) {
-        filteredResults = filteredResults.filter(prop => 
-          prop.bldgclass?.startsWith('V') || prop.landuse === '29'
-        );
-      }
-
-      // Sort results
-      if (sortBy === 'assessment') {
-        filteredResults.sort((a, b) => (b.assesstot || 0) - (a.assesstot || 0));
-      } else if (sortBy === 'area') {
-        filteredResults.sort((a, b) => (b.lotarea || 0) - (a.lotarea || 0));
-      } else if (sortBy === 'yearBuilt') {
-        filteredResults.sort((a, b) => (b.yearbuilt || 0) - (a.yearbuilt || 0));
-      } else if (sortBy === 'units') {
-        filteredResults.sort((a, b) => (b.unitstotal || 0) - (a.unitstotal || 0));
-      }
-
-      // Apply limit
-      const limitedResults = filteredResults.slice(0, limit);
+      // Results are already filtered and sorted by the API
+      const limitedResults = results;
 
       // Calculate summary statistics
       const totalAssessedValue = limitedResults.reduce((sum, prop) => sum + (prop.assesstot || 0), 0);

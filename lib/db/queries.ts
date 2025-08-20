@@ -1913,17 +1913,11 @@ export async function getNYCCensusBlocksWithGrowth({
     }
     
     // Add growth filters using existing growth rate fields
-    if (minPopulationGrowth !== undefined) {
-      conditions.push(gte(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`, minPopulationGrowth));
-    }
-    if (maxPopulationGrowth !== undefined) {
-      conditions.push(lte(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`, maxPopulationGrowth));
-    }
-    if (minIncomeGrowth !== undefined) {
-      conditions.push(gte(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`, minIncomeGrowth));
-    }
-    if (maxIncomeGrowth !== undefined) {
-      conditions.push(lte(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`, maxIncomeGrowth));
+    // Growth fields are not available in current schema
+    // TODO: Add growth calculations based on multiple years of data
+    if (minPopulationGrowth !== undefined || maxPopulationGrowth !== undefined ||
+        minIncomeGrowth !== undefined || maxIncomeGrowth !== undefined) {
+      console.log('⚠️ Growth filters requested but growth data not available in current schema');
     }
 
     // Execute query with all conditions
@@ -1952,24 +1946,16 @@ export async function getNYCCensusBlocksWithGrowth({
         unemploymentRate: nycCensusBlocks.unemploymentRate,
         borough: nycCensusBlocks.borough,
         geojsonDataId: nycCensusBlocks.geojsonDataId,
-        // Use existing growth fields
-        populationGrowth: sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`.as('populationGrowth'),
-        incomeGrowth: sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`.as('incomeGrowth'),
-        housingGrowth: sql`NULL`.as('housingGrowth'), // Not available in existing data
+        // Growth fields not available in current schema
+        populationGrowth: sql`NULL`.as('populationGrowth'),
+        incomeGrowth: sql`NULL`.as('incomeGrowth'),
+        housingGrowth: sql`NULL`.as('housingGrowth'),
       })
       .from(nycCensusBlocks)
       .where(and(...conditions));
 
-    // Add ORDER BY clause based on what kind of query this is
-    let orderBy;
-    if (minPopulationGrowth !== undefined || maxPopulationGrowth !== undefined) {
-      orderBy = desc(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`);
-    } else if (minIncomeGrowth !== undefined || maxIncomeGrowth !== undefined) {
-      orderBy = desc(sql`CAST("incomeGrowthRate1Yr" AS NUMERIC)`);
-    } else {
-      // Default: sort by population growth (highest first), then by population
-      orderBy = desc(sql`CAST("populationGrowthRate1Yr" AS NUMERIC)`);
-    }
+    // Add ORDER BY clause - default to sorting by median income (descending)
+    const orderBy = desc(nycCensusBlocks.medianHouseholdIncome);
 
     const results = await baseQuery.orderBy(orderBy).limit(limit);
 

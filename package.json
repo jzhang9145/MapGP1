@@ -16,7 +16,19 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "export PLAYWRIGHT=True && pnpm exec playwright test",
+    "setup": "./scripts/setup-project.sh",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:reset": "docker-compose down -v && docker system prune -f",
+    "dev:setup": "docker-compose up -d && pnpm db:migrate",
+    "populate:all": "npx tsx scripts/populate-nyc-neighborhoods.ts && npx tsx scripts/populate-nyc-parks.ts && npx tsx scripts/populate-nyc-school-zones.ts && npx tsx scripts/populate-nyc-census-blocks.ts && node scripts/populate-mappluto-arcgis.js",
+    "populate:neighborhoods": "npx tsx scripts/populate-nyc-neighborhoods.ts",
+    "populate:parks": "npx tsx scripts/populate-nyc-parks.ts",
+    "populate:schools": "npx tsx scripts/populate-nyc-school-zones.ts",
+    "populate:census": "npx tsx scripts/populate-nyc-census-blocks.ts",
+    "populate:properties": "node scripts/populate-mappluto-arcgis.js"
   },
   "dependencies": {
     "@ai-sdk/provider": "2.0.0",

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/auth';
 import { getAreaByChatId, getChatById } from '@/lib/db/queries';
+import { isUUID } from '@/lib/utils';
 
 export async function GET(
   request: NextRequest,
@@ -15,9 +16,9 @@ export async function GET(
 
     const { id: chatId } = await params;
 
-    if (!chatId) {
+    if (!chatId || !isUUID(chatId)) {
       return NextResponse.json(
-        { error: 'Chat ID is required' },
+        { error: 'Chat ID is invalid' },
         { status: 400 },
       );
     }

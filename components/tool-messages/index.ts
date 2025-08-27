@@ -14,5 +14,6 @@ export { NYCCensusTool } from './nyc-census-tool';
 export { MapPLUTOTool } from './mappluto-tool';
 export { UpdateAreaTool } from './update-area-tool';
 export { PlutoTool } from './pluto-tool';
+export { ParcelsTool } from './parcels-tool';
 export { Weather } from './weather';
 export { WebSearch } from './web-search';

@@ -9,6 +9,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import { createUIMessageStream, JsonToSseTransformStream } from 'ai';
 import { getStreamContext } from '../../route';
+import { isUUID } from '@/lib/utils';
 import { differenceInSeconds } from 'date-fns';
 
 export async function GET(
@@ -24,7 +25,7 @@ export async function GET(
     return new Response(null, { status: 204 });
   }
 
-  if (!chatId) {
+  if (!chatId || !isUUID(chatId)) {
     return new ChatSDKError('bad_request:api').toResponse();
   }
 

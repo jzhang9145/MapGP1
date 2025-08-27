@@ -16,8 +16,14 @@ import {
   getMessagesByChatId,
   saveChat,
   saveMessages,
+  ensureUserExistsById,
 } from '@/lib/db/queries';
-import { convertToUIMessages, generateUUID } from '@/lib/utils';
+import { convertToUIMessages, generateUUID, isUUID } from '@/lib/utils';
+import {
+  truncateMessagesForContext,
+  shouldTruncateMessages,
+  emergencyTruncateMessages,
+} from '@/lib/ai/context-management';
 import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
@@ -30,7 +36,8 @@ import { nycSchoolZones } from '@/lib/ai/tools/nyc-school-zones';
 import { nycParks } from '@/lib/ai/tools/nyc-parks';
 import { spatialAnalysis } from '@/lib/ai/tools/spatial-analysis';
 import { nycCensus } from '@/lib/ai/tools/nyc-census';
-import { mappluto } from '@/lib/ai/tools/mappluto';
+import { pluto } from '@/lib/ai/tools/pluto';
+import { parcels } from '@/lib/ai/tools/parcels';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -101,6 +108,8 @@ export async function POST(request: Request) {
     }
 
     const userType: UserType = session.user.type;
+    // Ensure the session user exists in DB (guest sessions may be missing rows after DB reset)
+    await ensureUserExistsById(session.user.id);
 
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,
@@ -111,7 +120,10 @@ export async function POST(request: Request) {
       return new ChatSDKError('rate_limit:chat').toResponse();
     }
 
-    const chat = await getChatById({ id });
+    let chat = null;
+    if (isUUID(id)) {
+      chat = await getChatById({ id });
+    }
 
     if (!chat) {
       const title = await generateTitleFromUserMessage({
@@ -131,7 +143,18 @@ export async function POST(request: Request) {
     }
 
     const messagesFromDb = await getMessagesByChatId({ id });
-    const uiMessages = [...convertToUIMessages(messagesFromDb), message];
+    let uiMessages = [...convertToUIMessages(messagesFromDb), message];
+
+    // Apply context window management to prevent context_length_exceeded errors
+    if (shouldTruncateMessages(uiMessages)) {
+      const { truncatedMessages, removedCount, estimatedTokens } =
+        truncateMessagesForContext(uiMessages);
+      uiMessages = truncatedMessages;
+
+      console.log(
+        `🔧 Context management: Removed ${removedCount} messages, estimated ${estimatedTokens} tokens`,
+      );
+    }
 
     const { longitude, latitude, city, country } = geolocation(request);
 
@@ -161,66 +184,107 @@ export async function POST(request: Request) {
     const model = myProvider.languageModel(selectedChatModel);
 
     const stream = createUIMessageStream({
-      execute: ({ writer: dataStream }) => {
-        const result = streamText({
-          model,
-          system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
-          stopWhen: stepCountIs(5),
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                  'webSearch',
-                  'updateArea',
-                  'readJSON',
-                  'nycNeighborhoods',
-                  'nycSchoolZones',
-                  'nycParks',
-                  'spatialAnalysis',
-                  'nycCensus',
-                  'mappluto',
-                ],
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          tools: {
-            getWeather,
-            webSearch,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-            updateArea: updateAreaTool({
-              chatId: id,
-              session,
-              dataStream,
-            }),
-            readJSON,
-            nycNeighborhoods,
-            nycSchoolZones,
-            nycParks,
-            spatialAnalysis,
-            nycCensus,
-            mappluto,
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: 'stream-text',
-          },
-        });
+      execute: async ({ writer: dataStream }) => {
+        let messagesToUse = uiMessages;
+        let retryCount = 0;
+        const maxRetries = 1;
 
-        result.consumeStream();
+        while (retryCount <= maxRetries) {
+          try {
+            const result = streamText({
+              model,
+              system: systemPrompt({ selectedChatModel, requestHints }),
+              messages: convertToModelMessages(messagesToUse),
+              stopWhen: stepCountIs(5),
+              experimental_activeTools:
+                selectedChatModel === 'chat-model-reasoning'
+                  ? []
+                  : [
+                      'getWeather',
+                      'createDocument',
+                      'updateDocument',
+                      'requestSuggestions',
+                      'webSearch',
+                      'updateArea',
+                      'readJSON',
+                      'nycNeighborhoods',
+                      'nycSchoolZones',
+                      'nycParks',
+                      'spatialAnalysis',
+                      'nycCensus',
+                      'pluto',
+                      'parcels',
+                    ],
+              experimental_transform: smoothStream({ chunking: 'word' }),
+              tools: {
+                getWeather,
+                webSearch,
+                createDocument: createDocument({ session, dataStream }),
+                updateDocument: updateDocument({ session, dataStream }),
+                requestSuggestions: requestSuggestions({
+                  session,
+                  dataStream,
+                }),
+                updateArea: updateAreaTool({
+                  chatId: id,
+                  session,
+                  dataStream,
+                }),
+                readJSON,
+                nycNeighborhoods,
+                nycSchoolZones,
+                nycParks,
+                spatialAnalysis,
+                nycCensus,
+                pluto,
+                parcels,
+              },
+              experimental_telemetry: {
+                isEnabled: isProductionEnvironment,
+                functionId: 'stream-text',
+              },
+            });
 
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: true,
-          }),
-        );
+            result.consumeStream();
+
+            dataStream.merge(
+              result.toUIMessageStream({
+                sendReasoning: false,
+              }),
+            );
+
+            // If we get here, the request succeeded, break out of retry loop
+            break;
+          } catch (error: any) {
+            console.log(
+              `🔧 streamText attempt ${retryCount + 1} failed:`,
+              error?.message,
+            );
+
+            // Check if it's a context length error
+            if (
+              error?.message?.includes('context_length_exceeded') ||
+              error?.message?.includes('context window') ||
+              error?.code === 'context_length_exceeded'
+            ) {
+              if (retryCount < maxRetries) {
+                // Apply emergency truncation for retry
+                const { truncatedMessages, removedCount, estimatedTokens } =
+                  emergencyTruncateMessages(messagesToUse);
+                messagesToUse = truncatedMessages;
+                retryCount++;
+
+                console.log(
+                  `🚨 Context error detected, applying emergency truncation: removed ${removedCount} messages, estimated ${estimatedTokens} tokens, retrying...`,
+                );
+                continue;
+              }
+            }
+
+            // If not a context error or we've exhausted retries, re-throw the error
+            throw error;
+          }
+        }
       },
       generateId: generateUUID,
       onFinish: async ({ messages }) => {
@@ -273,7 +337,9 @@ export async function DELETE(request: Request) {
   }
 
   const chat = await getChatById({ id });
-
+  if (!chat) {
+    return new ChatSDKError('not_found:chat').toResponse();
+  }
   if (chat.userId !== session.user.id) {
     return new ChatSDKError('forbidden:chat').toResponse();
   }

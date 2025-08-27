@@ -72,6 +72,31 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
+export async function getUserById(id: string): Promise<User | null> {
+  try {
+    const [u] = await db.select().from(user).where(eq(user.id, id));
+    return u ?? null;
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get user by id');
+  }
+}
+
+export async function createUserWithId(id: string, email: string) {
+  try {
+    return await db.insert(user).values({ id, email, password: null });
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to create user');
+  }
+}
+
+export async function ensureUserExistsById(id: string) {
+  const exists = await getUserById(id);
+  if (exists) return exists;
+  const email = `guest-${id.slice(0, 8)}@local`;
+  await createUserWithId(id, email);
+  return { id, email } as unknown as User;
+}
+
 export async function createUser(email: string, password: string) {
   const hashedPassword = generateHashedPassword(password);
 
@@ -1397,9 +1422,7 @@ export async function searchNYCSchoolZones({
       query = query.where(and(...conditions));
     }
 
-    const zones = await query
-      .limit(limit)
-      .orderBy(asc(nycSchoolZones.dbn));
+    const zones = await query.limit(limit).orderBy(asc(nycSchoolZones.dbn));
 
     return zones;
   } catch (error) {
@@ -1461,8 +1484,8 @@ export async function getNYCSchoolZonesWithGeoJSON({
         or(
           sql`LOWER(${nycSchoolZones.schoolName}) LIKE LOWER(${`%${searchTerm}%`})`,
           sql`LOWER(${nycSchoolZones.dbn}) LIKE LOWER(${`%${searchTerm}%`})`,
-          sql`LOWER(${nycSchoolZones.label}) LIKE LOWER(${`%${searchTerm}%`})`
-        )
+          sql`LOWER(${nycSchoolZones.label}) LIKE LOWER(${`%${searchTerm}%`})`,
+        ),
       );
     }
 
@@ -1476,7 +1499,7 @@ export async function getNYCSchoolZonesWithGeoJSON({
 
     const schoolZones = await query.limit(limit);
 
-    return schoolZones.filter(zone => zone.geojson);
+    return schoolZones.filter((zone) => zone.geojson);
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -1515,10 +1538,7 @@ export async function getAllNYCParks({
 
     return parks;
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to get NYC parks',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to get NYC parks');
   }
 }
 
@@ -1549,7 +1569,7 @@ export async function getNYCParksByBorough({
 export async function searchNYCParks({
   searchTerm,
   limit = 20,
-}: { 
+}: {
   searchTerm: string;
   limit?: number;
 }) {
@@ -1562,7 +1582,7 @@ export async function searchNYCParks({
           ilike(nycParks.name, `%${searchTerm}%`),
           ilike(nycParks.signname, `%${searchTerm}%`),
           ilike(nycParks.address, `%${searchTerm}%`),
-        )
+        ),
       )
       .limit(limit)
       .orderBy(asc(nycParks.name));
@@ -1578,10 +1598,7 @@ export async function searchNYCParks({
 
 export async function getNYCParkById({ id }: { id: string }) {
   try {
-    return await db
-      .select()
-      .from(nycParks)
-      .where(eq(nycParks.id, id));
+    return await db.select().from(nycParks).where(eq(nycParks.id, id));
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -1635,8 +1652,8 @@ export async function getNYCParksWithGeoJSON({
             ilike(nycParks.name, `%${searchTerm}%`),
             ilike(nycParks.signname, `%${searchTerm}%`),
             ilike(nycParks.address, `%${searchTerm}%`),
-          )
-        )
+          ),
+        ),
       );
     } else if (searchTerm) {
       query = query.where(
@@ -1644,15 +1661,13 @@ export async function getNYCParksWithGeoJSON({
           ilike(nycParks.name, `%${searchTerm}%`),
           ilike(nycParks.signname, `%${searchTerm}%`),
           ilike(nycParks.address, `%${searchTerm}%`),
-        )
+        ),
       );
     } else if (borough) {
       query = query.where(eq(nycParks.borough, borough));
     }
 
-    const parks = await query
-      .limit(limit)
-      .orderBy(asc(nycParks.name));
+    const parks = await query.limit(limit).orderBy(asc(nycParks.name));
 
     return parks;
   } catch (error) {
@@ -1663,7 +1678,9 @@ export async function getNYCParksWithGeoJSON({
   }
 }
 
-export async function createNYCParks(parks: Array<Omit<NYCPark, 'id' | 'createdAt' | 'updatedAt'>>) {
+export async function createNYCParks(
+  parks: Array<Omit<NYCPark, 'id' | 'createdAt' | 'updatedAt'>>,
+) {
   try {
     return await db.insert(nycParks).values(parks).returning();
   } catch (error) {
@@ -1678,10 +1695,7 @@ export async function clearNYCParks() {
   try {
     return await db.delete(nycParks);
   } catch (error) {
-    throw new ChatSDKError(
-      'bad_request:database',
-      'Failed to clear NYC parks',
-    );
+    throw new ChatSDKError('bad_request:database', 'Failed to clear NYC parks');
   }
 }
 
@@ -1720,7 +1734,7 @@ export async function searchNYCCensusBlocks({
         or(
           ilike(nycCensusBlocks.geoid, `%${searchTerm}%`),
           ilike(nycCensusBlocks.tract, `%${searchTerm}%`),
-        )
+        ),
       )
       .limit(limit)
       .orderBy(asc(nycCensusBlocks.geoid));
@@ -1738,7 +1752,7 @@ export async function getNYCCensusBlockByGeoid(geoid: string) {
       .select()
       .from(nycCensusBlocks)
       .where(eq(nycCensusBlocks.geoid, geoid));
-    
+
     return censusBlock;
   } catch (error) {
     throw new ChatSDKError(
@@ -1803,7 +1817,7 @@ export async function getNYCCensusBlocksWithGeoJSON({
         or(
           ilike(nycCensusBlocks.geoid, `%${searchTerm}%`),
           ilike(nycCensusBlocks.tract, `%${searchTerm}%`),
-        )
+        ),
       );
     }
 
@@ -1831,7 +1845,7 @@ export async function getNYCCensusBlocksWithGeoJSON({
       .limit(limit)
       .orderBy(asc(nycCensusBlocks.geoid));
 
-    return censusBlocks.filter(block => block.geojson);
+    return censusBlocks.filter((block) => block.geojson);
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -1840,7 +1854,9 @@ export async function getNYCCensusBlocksWithGeoJSON({
   }
 }
 
-export async function createNYCCensusBlocks(censusBlocks: Array<Omit<NYCCensusBlock, 'id' | 'createdAt' | 'updatedAt'>>) {
+export async function createNYCCensusBlocks(
+  censusBlocks: Array<Omit<NYCCensusBlock, 'id' | 'createdAt' | 'updatedAt'>>,
+) {
   try {
     return await db.insert(nycCensusBlocks).values(censusBlocks).returning();
   } catch (error) {
@@ -1890,12 +1906,12 @@ export async function getNYCCensusBlocksWithGrowth({
       minIncomeGrowth,
       maxIncomeGrowth,
       minPopulationGrowth,
-      maxPopulationGrowth
+      maxPopulationGrowth,
     });
-    
+
     // Build query conditions
     const conditions = [eq(nycCensusBlocks.dataYear, 2023)];
-    
+
     if (searchTerm) {
       conditions.push(ilike(nycCensusBlocks.geoid, `%${searchTerm}%`));
     }
@@ -1911,13 +1927,19 @@ export async function getNYCCensusBlocksWithGrowth({
     if (maxIncome) {
       conditions.push(lte(nycCensusBlocks.medianHouseholdIncome, maxIncome));
     }
-    
+
     // Add growth filters using existing growth rate fields
     // Growth fields are not available in current schema
     // TODO: Add growth calculations based on multiple years of data
-    if (minPopulationGrowth !== undefined || maxPopulationGrowth !== undefined ||
-        minIncomeGrowth !== undefined || maxIncomeGrowth !== undefined) {
-      console.log('⚠️ Growth filters requested but growth data not available in current schema');
+    if (
+      minPopulationGrowth !== undefined ||
+      maxPopulationGrowth !== undefined ||
+      minIncomeGrowth !== undefined ||
+      maxIncomeGrowth !== undefined
+    ) {
+      console.log(
+        '⚠️ Growth filters requested but growth data not available in current schema',
+      );
     }
 
     // Execute query with all conditions
@@ -1960,7 +1982,7 @@ export async function getNYCCensusBlocksWithGrowth({
     const results = await baseQuery.orderBy(orderBy).limit(limit);
 
     // Get GeoJSON data
-    const geojsonDataIds = results.map(r => r.geojsonDataId).filter(Boolean);
+    const geojsonDataIds = results.map((r) => r.geojsonDataId).filter(Boolean);
     let geojsonResults: any[] = [];
     if (geojsonDataIds.length > 0) {
       geojsonResults = await db
@@ -1973,18 +1995,19 @@ export async function getNYCCensusBlocksWithGrowth({
     }
 
     // Build geojson lookup map
-    const geojsonMap = new Map(geojsonResults.map(r => [r.id, r.data]));
+    const geojsonMap = new Map(geojsonResults.map((r) => [r.id, r.data]));
 
     // Build final results with geojson
-    const finalResults = results.map(block => ({
+    const finalResults = results.map((block) => ({
       ...block,
       geojson: block.geojsonDataId ? geojsonMap.get(block.geojsonDataId) : null,
     }));
-    
-    console.log(`📊 Found ${finalResults.length} census blocks with growth data`);
-    
+
+    console.log(
+      `📊 Found ${finalResults.length} census blocks with growth data`,
+    );
+
     return finalResults;
-    
   } catch (error) {
     console.error('❌ Error fetching census blocks with growth:', error);
     throw new ChatSDKError(
@@ -2001,10 +2024,7 @@ export async function getAllMapPLUTO({
   limit?: number;
 } = {}) {
   try {
-    return await db
-      .select()
-      .from(nycMapPLUTO)
-      .limit(limit);
+    return await db.select().from(nycMapPLUTO).limit(limit);
   } catch (error) {
     throw new ChatSDKError(
       'bad_request:database',
@@ -2036,7 +2056,9 @@ export async function getMapPLUTOWithGeoJSON({
     if (geojsonDataIds.length === 0) return [];
 
     // Filter out null values and ensure we have valid UUIDs
-    const validIds = geojsonDataIds.filter(id => id !== null && id !== undefined);
+    const validIds = geojsonDataIds.filter(
+      (id) => id !== null && id !== undefined,
+    );
     if (validIds.length === 0) return [];
 
     const results = await db
@@ -2053,8 +2075,8 @@ export async function getMapPLUTOWithGeoJSON({
       .where(
         and(
           isNotNull(nycMapPLUTO.geojsonDataId),
-          inArray(nycMapPLUTO.geojsonDataId, validIds)
-        )
+          inArray(nycMapPLUTO.geojsonDataId, validIds),
+        ),
       );
 
     return results.map((result) => ({
@@ -2065,7 +2087,7 @@ export async function getMapPLUTOWithGeoJSON({
     console.error('Database error in getMapPLUTOWithGeoJSON:', error);
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to get MapPLUTO properties with GeoJSON data'
+      'Failed to get MapPLUTO properties with GeoJSON data',
     );
   }
 }
@@ -2097,8 +2119,8 @@ export async function getAllMapPLUTOWithGeoJSON({
       query = query.where(
         and(
           isNotNull(nycMapPLUTO.geojsonDataId),
-          eq(nycMapPLUTO.borough, borough)
-        )
+          eq(nycMapPLUTO.borough, borough),
+        ),
       );
     }
 
@@ -2112,7 +2134,7 @@ export async function getAllMapPLUTOWithGeoJSON({
     console.error('Database error in getAllMapPLUTOWithGeoJSON:', error);
     throw new ChatSDKError(
       'bad_request:database',
-      'Failed to get all MapPLUTO properties with GeoJSON data'
+      'Failed to get all MapPLUTO properties with GeoJSON data',
     );
   }
 }

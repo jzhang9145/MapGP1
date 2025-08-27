@@ -6,45 +6,45 @@ ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lot" DROP NOT NULL;--> statement-breakpo
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "borocode" SET DATA TYPE varchar(1);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgclass" SET DATA TYPE varchar(2);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "landuse" SET DATA TYPE varchar(2);--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "comarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "resarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "officearea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "retailarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "garagearea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "strgearea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "factryarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "otherarea" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "numbldgs" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "numfloors" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "unitsres" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "unitstotal" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotfront" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotdepth" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgfront" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgdepth" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "assessland" SET DATA TYPE bigint;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "assesstot" SET DATA TYPE bigint;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "exempttot" SET DATA TYPE bigint;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearbuilt" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearalter1" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearalter2" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "builtfar" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "residfar" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "commfar" SET DATA TYPE numeric;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "facilfar" SET DATA TYPE numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotarea" TYPE integer USING NULLIF(regexp_replace("lotarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgarea" TYPE integer USING NULLIF(regexp_replace("bldgarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "comarea" TYPE integer USING NULLIF(regexp_replace("comarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "resarea" TYPE integer USING NULLIF(regexp_replace("resarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "officearea" TYPE integer USING NULLIF(regexp_replace("officearea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "retailarea" TYPE integer USING NULLIF(regexp_replace("retailarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "garagearea" TYPE integer USING NULLIF(regexp_replace("garagearea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "strgearea" TYPE integer USING NULLIF(regexp_replace("strgearea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "factryarea" TYPE integer USING NULLIF(regexp_replace("factryarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "otherarea" TYPE integer USING NULLIF(regexp_replace("otherarea", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "numbldgs" TYPE integer USING NULLIF(regexp_replace("numbldgs", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "numfloors" TYPE numeric USING NULLIF(regexp_replace("numfloors", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "unitsres" TYPE integer USING NULLIF(regexp_replace("unitsres", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "unitstotal" TYPE integer USING NULLIF(regexp_replace("unitstotal", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotfront" TYPE numeric USING NULLIF(regexp_replace("lotfront", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lotdepth" TYPE numeric USING NULLIF(regexp_replace("lotdepth", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgfront" TYPE numeric USING NULLIF(regexp_replace("bldgfront", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bldgdepth" TYPE numeric USING NULLIF(regexp_replace("bldgdepth", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "assessland" TYPE bigint USING NULLIF(regexp_replace("assessland", '[^0-9.-]', '', 'g'), '')::bigint;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "assesstot" TYPE bigint USING NULLIF(regexp_replace("assesstot", '[^0-9.-]', '', 'g'), '')::bigint;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "exempttot" TYPE bigint USING NULLIF(regexp_replace("exempttot", '[^0-9.-]', '', 'g'), '')::bigint;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearbuilt" TYPE integer USING NULLIF(regexp_replace("yearbuilt", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearalter1" TYPE integer USING NULLIF(regexp_replace("yearalter1", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "yearalter2" TYPE integer USING NULLIF(regexp_replace("yearalter2", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "builtfar" TYPE numeric USING NULLIF(regexp_replace("builtfar", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "residfar" TYPE numeric USING NULLIF(regexp_replace("residfar", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "commfar" TYPE numeric USING NULLIF(regexp_replace("commfar", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "facilfar" TYPE numeric USING NULLIF(regexp_replace("facilfar", '[^0-9.-]', '', 'g'), '')::numeric;--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "cd" SET DATA TYPE varchar(3);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "zipcode" SET DATA TYPE varchar(5);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "zonemap" SET DATA TYPE varchar(3);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "areasource" SET DATA TYPE varchar(1);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "ext" SET DATA TYPE varchar(1);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "proxcode" SET DATA TYPE varchar(1);--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "irrlotcode" SET DATA TYPE varchar(1);--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "irrlotcode" TYPE varchar(1) USING CASE WHEN "irrlotcode" IS NULL THEN NULL WHEN "irrlotcode" THEN '1' ELSE '0' END;--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "lottype" SET DATA TYPE varchar(1);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "bsmtcode" SET DATA TYPE varchar(1);--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "xcoord" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "ycoord" SET DATA TYPE integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "xcoord" TYPE integer USING NULLIF(regexp_replace("xcoord", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
+ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "ycoord" TYPE integer USING NULLIF(regexp_replace("ycoord", '[^0-9.-]', '', 'g'), '')::integer;--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "tract2010" SET DATA TYPE varchar(6);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "sanborn" SET DATA TYPE varchar(8);--> statement-breakpoint
 ALTER TABLE "NYCMapPLUTO" ALTER COLUMN "taxmap" SET DATA TYPE varchar(5);--> statement-breakpoint

@@ -35,6 +35,27 @@ Do not update document right after creating it. Wait for user feedback or reques
 export const regularPrompt =
   'You are a friendly assistant! Keep your responses concise and helpful.';
 
+// Tool routing guidance to bias the model toward the correct tools
+export const toolRoutingPrompt = `
+Tool selection guide (always prefer calling the appropriate tool when applicable):
+
+- School zones: If the user mentions "school zone", "school zones", "school boundary",
+  "elementary zone", "DBN", "DOE zone", "catchment", or asks to show school zones on a map,
+  call the nycSchoolZones tool first. Include geometry so the map can render the zones.
+- Parcels / properties / buildings / lots: If the user mentions "parcel", "parcels", "lot",
+  "lots", "BBL", "tax lot", "land parcel", "block and lot", "property", "properties",
+  "building", "buildings", "footprint", "development site", "zonedist", "landuse",
+  or asks to show parcels/buildings on a map, call the parcels tool (unified).
+  - If an area/neighborhood is mentioned (e.g., "in Park Slope"), pass geometry (neighborhood name)
+    and any attribute filters; the tool will perform a polygon intersect + attribute filter.
+  - If no area is mentioned, pass only attribute filters; the tool will run a filters-only query.
+  Always include geometry (f=geojson, returnGeometry=true) so the map can render the results. The
+  tool auto-paginates the ArcGIS API (no 2000 cap) and returns a geojsonDataId for map rendering.
+- Neighborhoods: Use nycNeighborhoods to get neighborhood boundaries; combine with
+  nycSchoolZones or spatialAnalysis when the user asks for zones within or intersecting a neighborhood.
+- Spatial analysis: Use spatialAnalysis for intersect/within operations between returned geometries.
+`;
+
 export interface RequestHints {
   latitude: Geo['latitude'];
   longitude: Geo['longitude'];
@@ -60,9 +81,9 @@ export const systemPrompt = ({
   const requestPrompt = getRequestPromptFromHints(requestHints);
 
   if (selectedChatModel === 'chat-model-reasoning') {
-    return `${regularPrompt}\n\n${requestPrompt}`;
+    return `${regularPrompt}\n\n${requestPrompt}\n\n${toolRoutingPrompt}`;
   } else {
-    return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+    return `${regularPrompt}\n\n${requestPrompt}\n\n${toolRoutingPrompt}\n\n${artifactsPrompt}`;
   }
 };
 

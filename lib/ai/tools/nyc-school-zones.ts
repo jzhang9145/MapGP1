@@ -9,7 +9,10 @@ import {
   getGeoJSONDataById,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
-import { schoolZonesResponseSchema, type SchoolZonesResponse } from '@/lib/schemas';
+import {
+  schoolZonesResponseSchema,
+  type SchoolZonesResponse,
+} from '@/lib/schemas';
 
 export const nycSchoolZones = tool({
   description:
@@ -18,7 +21,9 @@ export const nycSchoolZones = tool({
     searchTerm: z
       .string()
       .optional()
-      .describe('Search for school name, DBN (District Borough Number), or zone label'),
+      .describe(
+        'Search for school name, DBN (District Borough Number), or zone label',
+      ),
     borough: z
       .string()
       .optional()
@@ -32,7 +37,9 @@ export const nycSchoolZones = tool({
     dbn: z
       .string()
       .optional()
-      .describe('Search for specific District Borough Number (e.g., "20K503", "19K159")'),
+      .describe(
+        'Search for specific District Borough Number (e.g., "20K503", "19K159")',
+      ),
     limit: z
       .number()
       .min(1)
@@ -106,12 +113,17 @@ export const nycSchoolZones = tool({
 
         if (includeGeometry && zone.geojsonDataId) {
           try {
-            const geoData = await getGeoJSONDataById({ id: zone.geojsonDataId });
+            const geoData = await getGeoJSONDataById({
+              id: zone.geojsonDataId,
+            });
             if (geoData?.data) {
               enrichedZone.geojson = geoData.data;
             }
           } catch (error) {
-            console.warn(`Failed to fetch geometry for zone ${zone.dbn}:`, error);
+            console.warn(
+              `Failed to fetch geometry for zone ${zone.dbn}:`,
+              error,
+            );
           }
         }
 
@@ -165,7 +177,7 @@ export const nycSchoolZones = tool({
 function getBoroughName(borough: string): string {
   const boroughMap: Record<string, string> = {
     K: 'Brooklyn',
-    M: 'Manhattan', 
+    M: 'Manhattan',
     Q: 'Queens',
     X: 'Bronx',
     R: 'Staten Island',

@@ -28,7 +28,9 @@
     "populate:parks": "npx tsx scripts/populate-nyc-parks.ts",
     "populate:schools": "npx tsx scripts/populate-nyc-school-zones.ts",
     "populate:census": "npx tsx scripts/populate-nyc-census-blocks.ts",
-    "populate:properties": "node scripts/populate-mappluto-arcgis.js"
+    "populate:properties": "node scripts/populate-mappluto-arcgis.js",
+    "populate:properties:full": "npx tsx scripts/populate-mappluto-full-arcgis.ts --borough=all",
+    "db:seed": "npx tsx scripts/populate-all.ts"
   },
   "dependencies": {
     "@ai-sdk/provider": "2.0.0",

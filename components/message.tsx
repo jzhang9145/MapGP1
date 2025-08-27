@@ -31,6 +31,7 @@ import {
   MapPLUTOTool,
   UpdateAreaTool,
   PlutoTool,
+  ParcelsTool,
 } from './tool-messages';
 
 // Type narrowing is handled by TypeScript's control flow analysis
@@ -62,6 +63,18 @@ const PurePreviewMessage = ({
   );
 
   useDataStream();
+
+  const hasRenderableTool =
+    message.role === 'assistant' &&
+    Array.isArray(message.parts) &&
+    message.parts.some((p: any) =>
+      [
+        'tool-parcels',
+        'tool-spatialAnalysis',
+        'tool-pluto',
+        'tool-mappluto',
+      ].includes(p.type),
+    );
 
   return (
     <AnimatePresence>
@@ -127,6 +140,9 @@ const PurePreviewMessage = ({
               }
 
               if (type === 'text') {
+                if (hasRenderableTool && message.role === 'assistant') {
+                  return null;
+                }
                 if (mode === 'view') {
                   return (
                     <div key={key} className="flex flex-row gap-2 items-start">
@@ -368,6 +384,20 @@ const PurePreviewMessage = ({
                 const output = 'output' in part ? part.output : undefined;
                 return (
                   <PlutoTool
+                    key={toolCallId}
+                    toolCallId={toolCallId}
+                    state={state}
+                    input={input}
+                    output={output}
+                  />
+                );
+              }
+
+              if (type === 'tool-parcels') {
+                const { toolCallId, state, input } = part;
+                const output = 'output' in part ? part.output : undefined;
+                return (
+                  <ParcelsTool
                     key={toolCallId}
                     toolCallId={toolCallId}
                     state={state}

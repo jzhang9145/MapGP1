@@ -8,7 +8,12 @@ import {
   getNYCParksWithGeoJSON,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
-import { parksResponseSchema, type ParksResponse, formatParkInfo, getBoroughDisplayName } from '@/lib/schemas';
+import {
+  parksResponseSchema,
+  type ParksResponse,
+  formatParkInfo,
+  getBoroughDisplayName,
+} from '@/lib/schemas';
 
 export const nycParks = tool({
   description:
@@ -40,13 +45,13 @@ export const nycParks = tool({
 
       // Convert full borough names to codes used in the database
       const boroughCodeMap: Record<string, string> = {
-        'Manhattan': 'M',
-        'Bronx': 'X', 
-        'Brooklyn': 'B',
-        'Queens': 'Q',
+        Manhattan: 'M',
+        Bronx: 'X',
+        Brooklyn: 'B',
+        Queens: 'Q',
         'Staten Island': 'R',
       };
-      
+
       const boroughCode = borough ? boroughCodeMap[borough] : undefined;
 
       // Get parks with GeoJSON data
@@ -96,19 +101,21 @@ export const nycParks = tool({
 
       // Generate summary message
       let message = `Found ${parks.length} NYC park${parks.length !== 1 ? 's' : ''}`;
-      
+
       if (searchTerm) {
         message += ` matching "${searchTerm}"`;
       }
-      
+
       if (borough) {
         message += ` in ${getBoroughDisplayName(borough)}`;
       }
-      
+
       message += '. ';
-      
+
       // Add details about parks with boundaries
-      const parksWithBoundaries = transformedParks.filter(park => park.geojson);
+      const parksWithBoundaries = transformedParks.filter(
+        (park) => park.geojson,
+      );
       if (parksWithBoundaries.length > 0) {
         message += `${parksWithBoundaries.length} park${parksWithBoundaries.length !== 1 ? 's' : ''} ${parksWithBoundaries.length !== 1 ? 'have' : 'has'} boundary data and will be displayed on the map.`;
       }
@@ -125,11 +132,11 @@ export const nycParks = tool({
       return response;
     } catch (error) {
       console.error('Error fetching NYC parks from database:', error);
-      
+
       if (error instanceof ChatSDKError) {
         throw error;
       }
-      
+
       throw new ChatSDKError(
         'bad_request:database',
         'Failed to retrieve NYC parks data',

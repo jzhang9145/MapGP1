@@ -1,14 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import {
-  getAllPlutoLots,
-  getPlutoLotsByBorough,
-  searchPlutoLots,
-  getPlutoLotByBBL,
-  filterPlutoLots,
-  createGeoJSONData,
-  getGeoJSONDataById,
-} from '@/lib/db/queries';
+import { createGeoJSONData } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import {
   plutoSearchResponseSchema,
@@ -17,8 +9,15 @@ import {
 
 export const pluto = tool({
   description:
-    'Get NYC PLUTO (Primary Land Use Tax Lot Output) data from the local database. Returns detailed information about tax lots including ownership, land use, building characteristics, zoning, and geographic data. PLUTO contains comprehensive data for every tax lot in New York City.',
+    "Get NYC PLUTO (Primary Land Use Tax Lot Output) data from NYC Planning's MapPLUTO ArcGIS service (live). Returns detailed information about tax lots including ownership, land use, building characteristics, zoning, and geographic data. Always fetches remotely to ensure fresh data.",
   inputSchema: z.object({
+    arcgisUrl: z
+      .string()
+      .url()
+      .optional()
+      .describe(
+        'Optional: full ArcGIS MapPLUTO query URL (returns GeoJSON). When provided, data is fetched live instead of local DB.',
+      ),
     bbl: z
       .string()
       .optional()
@@ -63,10 +62,11 @@ export const pluto = tool({
     limit: z
       .number()
       .optional()
-      .describe('Maximum number of lots to return (default: 50)'),
+      .describe('Maximum number of lots to return (omit to auto-paginate)'),
   }),
   outputSchema: plutoSearchResponseSchema,
   execute: async ({
+    arcgisUrl,
     bbl,
     borough,
     search,
@@ -78,369 +78,188 @@ export const pluto = tool({
     lotAreaMin,
     lotAreaMax,
     areaId,
-    limit = 50,
+    limit,
   }): Promise<PlutoSearchResponse> => {
     try {
-      let lots: any[];
-
-      // Query based on parameters
-      if (bbl) {
-        // Get specific lot by BBL
-        const lotResult = await getPlutoLotByBBL({ bbl });
-        lots = lotResult || [];
-      } else if (areaId) {
-        // Get PLUTO data for the currently selected area
-        try {
-          lots = await getAllPlutoLots({ limit });
-        } catch (error) {
-          console.error('Error getting PLUTO data by area:', error);
-          // Fallback to getting all lots if area query fails
-          lots = await getAllPlutoLots({ limit });
+      // Build ArcGIS params if URL not provided
+      let url = arcgisUrl;
+      const baseUrl =
+        'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MapPLUTO/FeatureServer/0/query';
+      let baseParams: URLSearchParams | null = null;
+      if (!url) {
+        const whereParts: string[] = [];
+        if (bbl) whereParts.push(`BBL=${encodeURIComponent(bbl)}`);
+        if (borough) {
+          const b = borough.toLowerCase();
+          const bcode = b.startsWith('man')
+            ? 'MN'
+            : b.startsWith('bronx')
+              ? 'BX'
+              : b.startsWith('brook')
+                ? 'BK'
+                : b.startsWith('que')
+                  ? 'QN'
+                  : b.startsWith('stat')
+                    ? 'SI'
+                    : '';
+          if (bcode) whereParts.push(`Borough='${bcode}'`);
         }
-      } else if (search) {
-        // Search by various fields
-        lots = await searchPlutoLots({ searchTerm: search, limit });
-      } else if (
-        borough ||
-        landUse ||
-        buildingClass ||
-        zoningDistrict ||
-        yearBuiltMin ||
-        yearBuiltMax ||
-        lotAreaMin ||
-        lotAreaMax
-      ) {
-        // Apply filters
-        lots = await filterPlutoLots({
-          borough,
-          landUse,
-          buildingClass,
-          zoningDistrict,
-          yearBuiltMin,
-          yearBuiltMax,
-          lotAreaMin,
-          lotAreaMax,
-          limit,
+        if (zoningDistrict) {
+          whereParts.push(
+            `(ZoneDist1='${zoningDistrict}' OR ZoneDist2='${zoningDistrict}' OR ZoneDist3='${zoningDistrict}' OR ZoneDist4='${zoningDistrict}')`,
+          );
+        }
+        if (landUse) whereParts.push(`LandUse='${landUse}'`);
+        if (buildingClass) whereParts.push(`BldgClass='${buildingClass}'`);
+        if (yearBuiltMin !== undefined)
+          whereParts.push(`YearBuilt>=${yearBuiltMin}`);
+        if (yearBuiltMax !== undefined)
+          whereParts.push(`YearBuilt<=${yearBuiltMax}`);
+        if (lotAreaMin !== undefined) whereParts.push(`LotArea>=${lotAreaMin}`);
+        if (lotAreaMax !== undefined) whereParts.push(`LotArea<=${lotAreaMax}`);
+
+        baseParams = new URLSearchParams({
+          where: whereParts.length ? whereParts.join(' AND ') : '1=1',
+          outFields: '*',
+          returnGeometry: 'true',
+          outSR: '4326',
+          f: 'geojson',
+          orderByFields: 'OBJECTID',
         });
-      } else if (borough) {
-        // Filter by borough only
-        lots = await getPlutoLotsByBorough({ borough });
-      } else {
-        // Get all lots with limit
-        lots = await getAllPlutoLots({ limit });
+        if (limit) {
+          baseParams.set('resultRecordCount', String(Math.min(2000, limit)));
+        }
+        url = `${baseUrl}?${baseParams.toString()}`;
+      }
+      // Fetch with pagination when limit is omitted
+      const pageSize = 2000;
+      const allFeatures: any[] = [];
+      let fetched = 0;
+      let resultOffset = 0;
+      let keepFetching = true;
+      while (keepFetching) {
+        let res: Response;
+        if (!arcgisUrl && baseParams) {
+          const params = new URLSearchParams(baseParams);
+          const currentCount = limit
+            ? Math.min(pageSize, Math.max(1, limit - fetched))
+            : pageSize;
+          params.set('resultRecordCount', String(currentCount));
+          params.set('resultOffset', String(resultOffset));
+          params.set('returnExceededLimitFeatures', 'true');
+          // Prefer POST to avoid URL length limits
+          res = await fetch(baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
+          });
+        } else {
+          res = await fetch(url);
+        }
+        if (!res.ok) {
+          throw new ChatSDKError(
+            'bad_request:api',
+            `ArcGIS request failed: ${res.status}`,
+          );
+        }
+        const data = (await res.json()) as any;
+        if ((data as any)?.error) {
+          throw new ChatSDKError(
+            'bad_request:api',
+            `ArcGIS error: ${(data as any).error?.message || 'Unknown error'}`,
+          );
+        }
+        const features: any[] = Array.isArray(data?.features)
+          ? data.features
+          : [];
+        allFeatures.push(...features);
+        fetched += features.length;
+        if (
+          features.length <
+            (limit
+              ? Math.min(pageSize, limit - (fetched - features.length))
+              : pageSize) ||
+          (limit && fetched >= limit)
+        ) {
+          keepFetching = false;
+        } else {
+          resultOffset += features.length;
+        }
       }
 
-      if (!lots || lots.length === 0) {
+      if (allFeatures.length === 0) {
         throw new ChatSDKError(
           'bad_request:api',
-          'No PLUTO lots found matching the criteria',
+          'No features returned from ArcGIS',
         );
       }
 
-      // Apply limit
-      const limitedLots = lots.slice(0, limit);
-
-      // If only one result, return it directly
-      if (limitedLots.length === 1) {
-        const lot = limitedLots[0];
-        return {
-          query:
-            bbl || search || borough || areaId
-              ? `Area: ${areaId}`
-              : 'All PLUTO lots',
-          totalResults: 1,
-          results: [
-            {
-              bbl: lot.bbl,
-              borough: lot.borough,
-              block: lot.block,
-              lot: lot.lot,
-              address: lot.address,
-              zipcode: lot.zipcode,
-              ownerName: lot.ownerName,
-              ownerType: lot.ownerType,
-              landUse: lot.landUse,
-              landUseCode: lot.landUseCode,
-              buildingClass: lot.buildingClass,
-              buildingClassCode: lot.buildingClassCode,
-              yearBuilt: lot.yearBuilt ? Number(lot.yearBuilt) : undefined,
-              yearAltered: lot.yearAltered
-                ? Number(lot.yearAltered)
-                : undefined,
-              numFloors: lot.numFloors ? Number(lot.numFloors) : undefined,
-              numStories: lot.numStories ? Number(lot.numStories) : undefined,
-              lotArea: lot.lotArea ? Number(lot.lotArea) : undefined,
-              bldgArea: lot.bldgArea ? Number(lot.bldgArea) : undefined,
-              commFAR: lot.commFAR ? Number(lot.commFAR) : undefined,
-              resFAR: lot.resFAR ? Number(lot.resFAR) : undefined,
-              facilFAR: lot.facilFAR ? Number(lot.facilFAR) : undefined,
-              bldgFront: lot.bldgFront ? Number(lot.bldgFront) : undefined,
-              bldgDepth: lot.bldgDepth ? Number(lot.bldgDepth) : undefined,
-              lotFront: lot.lotFront ? Number(lot.lotFront) : undefined,
-              lotDepth: lot.lotDepth ? Number(lot.lotDepth) : undefined,
-              bldgClass: lot.bldgClass,
-              tract2010: lot.tract2010,
-              xCoord: lot.xCoord ? Number(lot.xCoord) : undefined,
-              yCoord: lot.yCoord ? Number(lot.yCoord) : undefined,
-              latitude: lot.latitude ? Number(lot.latitude) : undefined,
-              longitude: lot.longitude ? Number(lot.longitude) : undefined,
-              councilDistrict: lot.councilDistrict,
-              communityDistrict: lot.communityDistrict,
-              policePrecinct: lot.policePrecinct,
-              fireCompany: lot.fireCompany,
-              fireBattalion: lot.fireBattalion,
-              fireDivision: lot.fireDivision,
-              healthArea: lot.healthArea,
-              healthCenterDistrict: lot.healthCenterDistrict,
-              schoolDistrict: lot.schoolDistrict,
-              voterPrecinct: lot.voterPrecinct,
-              electionDistrict: lot.electionDistrict,
-              assemblyDistrict: lot.assemblyDistrict,
-              senateDistrict: lot.senateDistrict,
-              congressionalDistrict: lot.congressionalDistrict,
-              sanitationDistrict: lot.sanitationDistrict,
-              sanitationSub: lot.sanitationSub,
-              zoningDistrict: lot.zoningDistrict,
-              overlayDistrict1: lot.overlayDistrict1,
-              overlayDistrict2: lot.overlayDistrict2,
-              specialDistrict1: lot.specialDistrict1,
-              specialDistrict2: lot.specialDistrict2,
-              specialDistrict3: lot.specialDistrict3,
-              easements: lot.easements,
-              landmark: lot.landmark,
-              far: lot.far ? Number(lot.far) : undefined,
-              irrLotCode: lot.irrLotCode,
-              lotType: lot.lotType,
-              bsmtCode: lot.bsmtCode,
-              assessLand: lot.assessLand ? Number(lot.assessLand) : undefined,
-              assessTot: lot.assessTot ? Number(lot.assessTot) : undefined,
-              exemptLand: lot.exemptLand ? Number(lot.exemptLand) : undefined,
-              exemptTot: lot.exemptTot ? Number(lot.exemptTot) : undefined,
-              yearAlter1: lot.yearAlter1 ? Number(lot.yearAlter1) : undefined,
-              yearAlter2: lot.yearAlter2 ? Number(lot.yearAlter2) : undefined,
-              histDist: lot.histDist,
-              lstAction: lot.lstAction,
-              lstStatus: lot.lstStatus,
-              lstDate: lot.lstDate,
-              lstReason: lot.lstReason,
-              geojsonDataId: lot.geojsonDataId,
-            },
-          ],
-        };
-      }
-
-      // Create GeoJSON feature collection for multiple results
-      const features = await Promise.all(
-        limitedLots.map(async (lot) => {
-          let geometry = {
-            // Fallback to point if no geometry stored
-            type: 'Point' as const,
-            coordinates: [
-              lot.longitude ? Number(lot.longitude) : 0,
-              lot.latitude ? Number(lot.latitude) : 0,
-            ] as [number, number],
-          };
-
-          // Try to get geometry from GeoJSONData table
-          if (lot.geojsonDataId) {
-            try {
-              const geojsonData = await getGeoJSONDataById({
-                id: lot.geojsonDataId,
-              });
-              if (geojsonData?.[0]?.data) {
-                geometry = geojsonData[0].data as any;
-              }
-            } catch (error) {
-              console.warn(`Failed to fetch geometry for ${lot.bbl}:`, error);
-            }
-          }
-
-          return {
-            type: 'Feature' as const,
-            properties: {
-              bbl: lot.bbl,
-              borough: lot.borough,
-              block: lot.block,
-              lot: lot.lot,
-              address: lot.address,
-              zipcode: lot.zipcode,
-              ownerName: lot.ownerName,
-              ownerType: lot.ownerType,
-              landUse: lot.landUse,
-              landUseCode: lot.landUseCode,
-              buildingClass: lot.buildingClass,
-              buildingClassCode: lot.buildingClassCode,
-              yearBuilt: lot.yearBuilt ? Number(lot.yearBuilt) : undefined,
-              yearAltered: lot.yearAltered
-                ? Number(lot.yearAltered)
-                : undefined,
-              numFloors: lot.numFloors ? Number(lot.numFloors) : undefined,
-              numStories: lot.numStories ? Number(lot.numStories) : undefined,
-              lotArea: lot.lotArea ? Number(lot.lotArea) : undefined,
-              bldgArea: lot.bldgArea ? Number(lot.bldgArea) : undefined,
-              commFAR: lot.commFAR ? Number(lot.commFAR) : undefined,
-              resFAR: lot.resFAR ? Number(lot.resFAR) : undefined,
-              facilFAR: lot.facilFAR ? Number(lot.facilFAR) : undefined,
-              bldgFront: lot.bldgFront ? Number(lot.bldgFront) : undefined,
-              bldgDepth: lot.bldgDepth ? Number(lot.bldgDepth) : undefined,
-              lotFront: lot.lotFront ? Number(lot.lotFront) : undefined,
-              lotDepth: lot.lotDepth ? Number(lot.lotDepth) : undefined,
-              bldgClass: lot.bldgClass,
-              tract2010: lot.tract2010,
-              xCoord: lot.xCoord ? Number(lot.xCoord) : undefined,
-              yCoord: lot.yCoord ? Number(lot.yCoord) : undefined,
-              latitude: lot.latitude ? Number(lot.latitude) : undefined,
-              longitude: lot.longitude ? Number(lot.longitude) : undefined,
-              councilDistrict: lot.councilDistrict,
-              communityDistrict: lot.communityDistrict,
-              policePrecinct: lot.policePrecinct,
-              fireCompany: lot.fireCompany,
-              fireBattalion: lot.fireBattalion,
-              fireDivision: lot.fireDivision,
-              healthArea: lot.healthArea,
-              healthCenterDistrict: lot.healthCenterDistrict,
-              schoolDistrict: lot.schoolDistrict,
-              voterPrecinct: lot.voterPrecinct,
-              electionDistrict: lot.electionDistrict,
-              assemblyDistrict: lot.assemblyDistrict,
-              senateDistrict: lot.senateDistrict,
-              congressionalDistrict: lot.congressionalDistrict,
-              sanitationDistrict: lot.sanitationDistrict,
-              sanitationSub: lot.sanitationSub,
-              zoningDistrict: lot.zoningDistrict,
-              overlayDistrict1: lot.overlayDistrict1,
-              overlayDistrict2: lot.overlayDistrict2,
-              specialDistrict1: lot.specialDistrict1,
-              specialDistrict2: lot.specialDistrict2,
-              specialDistrict3: lot.specialDistrict3,
-              easements: lot.easements,
-              landmark: lot.landmark,
-              far: lot.far ? Number(lot.far) : undefined,
-              irrLotCode: lot.irrLotCode,
-              lotType: lot.lotType,
-              bsmtCode: lot.bsmtCode,
-              assessLand: lot.assessLand ? Number(lot.assessLand) : undefined,
-              assessTot: lot.assessTot ? Number(lot.assessTot) : undefined,
-              exemptLand: lot.exemptLand ? Number(lot.exemptLand) : undefined,
-              exemptTot: lot.exemptTot ? Number(lot.exemptTot) : undefined,
-              yearAlter1: lot.yearAlter1 ? Number(lot.yearAlter1) : undefined,
-              yearAlter2: lot.yearAlter2 ? Number(lot.yearAlter2) : undefined,
-              histDist: lot.histDist,
-              lstAction: lot.lstAction,
-              lstStatus: lot.lstStatus,
-              lstDate: lot.lstDate,
-              lstReason: lot.lstReason,
-              geojsonDataId: lot.geojsonDataId,
-            },
-            geometry: geometry,
-          };
-        }),
-      );
-
-      const geojson = {
-        type: 'FeatureCollection' as const,
-        features: features,
-      };
-
-      // Store the GeoJSON data and get the ID
-      const geojsonData = await createGeoJSONData({
-        data: geojson,
+      // Persist a reference FeatureCollection for map rendering
+      const fc = { type: 'FeatureCollection', features: allFeatures } as any;
+      const geoRef = await createGeoJSONData({
+        data: fc,
         metadata: {
-          type: 'pluto_lots',
-          source: 'Local Database',
-          dataset: 'NYC PLUTO (Primary Land Use Tax Lot Output)',
-          bbl: bbl || null,
-          borough: borough || null,
-          search: search || null,
-          count: limitedLots.length,
+          type: 'pluto_lots_remote',
+          source: 'arcgis_mappluto',
+          url,
+          count: allFeatures.length,
         },
       });
 
+      const resultsToMap = limit ? allFeatures.slice(0, limit) : allFeatures;
       return {
         query:
-          bbl || search || borough || areaId
-            ? `Area: ${areaId}`
-            : 'All PLUTO lots',
-        totalResults: limitedLots.length,
-        results: limitedLots.map((lot) => ({
-          bbl: lot.bbl,
-          borough: lot.borough,
-          block: lot.block,
-          lot: lot.lot,
-          address: lot.address,
-          zipcode: lot.zipcode,
-          ownerName: lot.ownerName,
-          ownerType: lot.ownerType,
-          landUse: lot.landUse,
-          landUseCode: lot.landUseCode,
-          buildingClass: lot.buildingClass,
-          buildingClassCode: lot.buildingClassCode,
-          yearBuilt: lot.yearBuilt ? Number(lot.yearBuilt) : undefined,
-          yearAltered: lot.yearAltered ? Number(lot.yearAltered) : undefined,
-          numFloors: lot.numFloors ? Number(lot.numFloors) : undefined,
-          numStories: lot.numStories ? Number(lot.numStories) : undefined,
-          lotArea: lot.lotArea ? Number(lot.lotArea) : undefined,
-          bldgArea: lot.bldgArea ? Number(lot.bldgArea) : undefined,
-          commFAR: lot.commFAR ? Number(lot.commFAR) : undefined,
-          resFAR: lot.resFAR ? Number(lot.resFAR) : undefined,
-          facilFAR: lot.facilFAR ? Number(lot.facilFAR) : undefined,
-          bldgFront: lot.bldgFront ? Number(lot.bldgFront) : undefined,
-          bldgDepth: lot.bldgDepth ? Number(lot.bldgDepth) : undefined,
-          lotFront: lot.lotFront ? Number(lot.lotFront) : undefined,
-          lotDepth: lot.lotDepth ? Number(lot.lotDepth) : undefined,
-          bldgClass: lot.bldgClass,
-          tract2010: lot.tract2010,
-          xCoord: lot.xCoord ? Number(lot.xCoord) : undefined,
-          yCoord: lot.yCoord ? Number(lot.yCoord) : undefined,
-          latitude: lot.latitude ? Number(lot.latitude) : undefined,
-          longitude: lot.longitude ? Number(lot.longitude) : undefined,
-          councilDistrict: lot.councilDistrict,
-          communityDistrict: lot.communityDistrict,
-          policePrecinct: lot.policePrecinct,
-          fireCompany: lot.fireCompany,
-          fireBattalion: lot.fireBattalion,
-          fireDivision: lot.fireDivision,
-          healthArea: lot.healthArea,
-          healthCenterDistrict: lot.healthCenterDistrict,
-          schoolDistrict: lot.schoolDistrict,
-          voterPrecinct: lot.voterPrecinct,
-          electionDistrict: lot.electionDistrict,
-          assemblyDistrict: lot.assemblyDistrict,
-          senateDistrict: lot.senateDistrict,
-          congressionalDistrict: lot.congressionalDistrict,
-          sanitationDistrict: lot.sanitationDistrict,
-          sanitationSub: lot.sanitationSub,
-          zoningDistrict: lot.zoningDistrict,
-          overlayDistrict1: lot.overlayDistrict1,
-          overlayDistrict2: lot.overlayDistrict2,
-          specialDistrict1: lot.specialDistrict1,
-          specialDistrict2: lot.specialDistrict2,
-          specialDistrict3: lot.specialDistrict3,
-          easements: lot.easements,
-          landmark: lot.landmark,
-          far: lot.far ? Number(lot.far) : undefined,
-          irrLotCode: lot.irrLotCode,
-          lotType: lot.lotType,
-          bsmtCode: lot.bsmtCode,
-          assessLand: lot.assessLand ? Number(lot.assessLand) : undefined,
-          assessTot: lot.assessTot ? Number(lot.assessTot) : undefined,
-          exemptLand: lot.exemptLand ? Number(lot.exemptLand) : undefined,
-          exemptTot: lot.exemptTot ? Number(lot.exemptTot) : undefined,
-          yearAlter1: lot.yearAlter1 ? Number(lot.yearAlter1) : undefined,
-          yearAlter2: lot.yearAlter2 ? Number(lot.yearAlter2) : undefined,
-          histDist: lot.histDist,
-          lstAction: lot.lstAction,
-          lstStatus: lot.lstStatus,
-          lstDate: lot.lstDate,
-          lstReason: lot.lstReason,
-          geojsonDataId: lot.geojsonDataId,
-        })),
+          search || bbl || borough || zoningDistrict
+            ? 'MapPLUTO filtered'
+            : 'MapPLUTO all',
+        totalResults: resultsToMap.length,
+        // Do not attach huge geojson to avoid context overflows; client fetches via /api/mappluto/geojson
+        results: resultsToMap.map((f: any) => {
+          const p = f?.properties || {};
+          return {
+            bbl: p.BBL ? String(p.BBL) : undefined,
+            borough: p.Borough || undefined,
+            block: p.Block ? String(p.Block) : undefined,
+            lot: p.Lot ? String(p.Lot) : undefined,
+            address: p.Address || undefined,
+            zipcode: p.ZipCode ? String(p.ZipCode) : undefined,
+            ownerName: p.OwnerName || undefined,
+            ownerType: p.OwnerType || undefined,
+            landUse: p.LandUse || undefined,
+            buildingClass: p.BldgClass || undefined,
+            yearBuilt: p.YearBuilt ?? undefined,
+            numFloors: p.NumFloors ?? undefined,
+            lotArea: p.LotArea ?? undefined,
+            bldgArea: p.BldgArea ?? undefined,
+            commFAR: p.CommFAR ?? undefined,
+            resFAR: p.ResidFAR ?? undefined,
+            facilFAR: p.FacilFAR ?? undefined,
+            bldgFront: p.BldgFront ?? undefined,
+            bldgDepth: p.BldgDepth ?? undefined,
+            lotFront: p.LotFront ?? undefined,
+            lotDepth: p.LotDepth ?? undefined,
+            tract2010: p.Tract2010 ?? undefined,
+            xCoord: p.XCoord ?? undefined,
+            yCoord: p.YCoord ?? undefined,
+            latitude: p.Latitude ?? undefined,
+            longitude: p.Longitude ?? undefined,
+            councilDistrict: p.Council ? String(p.Council) : undefined,
+            communityDistrict: p.CD ? String(p.CD) : undefined,
+            zoningDistrict:
+              p.ZoneDist1 ||
+              p.ZoneDist2 ||
+              p.ZoneDist3 ||
+              p.ZoneDist4 ||
+              undefined,
+            geojsonDataId: (geoRef as any)?.[0]?.id,
+          };
+        }),
       };
     } catch (error) {
-      console.error('Error fetching PLUTO data from database:', error);
+      console.error('Error fetching PLUTO data from ArcGIS:', error);
       throw new ChatSDKError(
         'bad_request:api',
-        'Failed to fetch PLUTO data from database',
+        'Failed to fetch PLUTO data from ArcGIS',
       );
     }
   },

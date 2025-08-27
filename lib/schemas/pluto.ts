@@ -89,6 +89,7 @@ export const plutoSearchResponseSchema = z.object({
   query: z.string().describe('Search query used'),
   totalResults: z.number().describe('Total number of results'),
   results: z.array(plutoLotSchema).describe('PLUTO lot records'),
+  geojson: z.any().optional().describe('FeatureCollection for map rendering'),
   error: z.string().optional().describe('Error message if any'),
 });
 

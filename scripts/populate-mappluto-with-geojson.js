@@ -76,7 +76,7 @@ async function populateMapPLUTOWithGeoJSON() {
     // Create a map of BBL to GeoJSON for quick lookup
     const bblToGeoJson = new Map();
     geoJsonData.forEach(feature => {
-      if (feature.properties && feature.properties.bbl) {
+      if (feature.properties?.bbl) {
         bblToGeoJson.set(feature.properties.bbl, feature);
       }
     });
@@ -97,14 +97,14 @@ async function populateMapPLUTOWithGeoJSON() {
         
         const cleanNumber = (val) => {
           if (val === null || val === undefined || val === '' || val === 'null') return null;
-          const num = parseFloat(val);
-          return isNaN(num) ? null : num;
+          const num = Number.parseFloat(val);
+          return Number.isNaN(num) ? null : num;
         };
         
         const cleanInteger = (val) => {
           if (val === null || val === undefined || val === '' || val === 'null') return null;
-          const num = parseInt(val);
-          return isNaN(num) ? null : num;
+          const num = Number.parseInt(val);
+          return Number.isNaN(num) ? null : num;
         };
         
         // Build address from available fields

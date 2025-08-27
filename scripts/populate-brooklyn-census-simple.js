@@ -51,13 +51,13 @@ async function populateBrooklynCensus() {
         const tract = row[headers.indexOf('tract')];
         const geoid = `${state}${county}${tract}000`; // Make it look like a block
         
-        const population = parseInt(row[headers.indexOf('B01003_001E')]) || null;
-        const income = parseInt(row[headers.indexOf('B19013_001E')]) || null;
-        const households = parseInt(row[headers.indexOf('B25002_001E')]) || null;
-        const occupied = parseInt(row[headers.indexOf('B25002_002E')]) || null;
+        const population = Number.parseInt(row[headers.indexOf('B01003_001E')]) || null;
+        const income = Number.parseInt(row[headers.indexOf('B19013_001E')]) || null;
+        const households = Number.parseInt(row[headers.indexOf('B25002_001E')]) || null;
+        const occupied = Number.parseInt(row[headers.indexOf('B25002_002E')]) || null;
         
         // Create simple square geometry
-        const tractNum = parseInt(tract);
+        const tractNum = Number.parseInt(tract);
         const row_idx = Math.floor(tractNum / 100) % 10;
         const col_idx = tractNum % 10;
         

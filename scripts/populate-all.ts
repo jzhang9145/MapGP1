@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 import postgres from 'postgres';
 
 config({ path: '.env.local' });
@@ -58,7 +58,7 @@ async function main() {
   await run('node', ['scripts/populate-mappluto-with-geojson.js']);
 
   // Census blocks + ACS (optional)
-  if (process.env.CENSUS_API_KEY && process.env.CENSUS_API_KEY.trim()) {
+  if (process.env.CENSUS_API_KEY?.trim()) {
     console.log('\n📊 Populating NYC census blocks + ACS demographics...');
     await run('npx', ['tsx', 'scripts/populate-nyc-census-blocks.ts']);
   } else {

@@ -64,14 +64,14 @@ async function populateMapPLUTOBrooklyn() {
         
         const cleanNumber = (val) => {
           if (val === null || val === undefined || val === '' || val === 'null') return null;
-          const num = parseFloat(val);
-          return isNaN(num) ? null : num;
+          const num = Number.parseFloat(val);
+          return Number.isNaN(num) ? null : num;
         };
         
         const cleanInteger = (val) => {
           if (val === null || val === undefined || val === '' || val === 'null') return null;
-          const num = parseInt(val);
-          return isNaN(num) ? null : num;
+          const num = Number.parseInt(val);
+          return Number.isNaN(num) ? null : num;
         };
         
         // Build address from available fields

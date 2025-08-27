@@ -5,7 +5,6 @@ import {
   getNYCSchoolZonesByBorough,
   searchNYCSchoolZones,
   getNYCSchoolZoneByDbn,
-  createGeoJSONData,
   getGeoJSONDataById,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
@@ -69,7 +68,7 @@ export const nycSchoolZones = tool({
         limit,
       });
 
-      let zones;
+      let zones: any[] = [];
 
       // If specific DBN is requested, get that zone
       if (dbn) {
@@ -77,7 +76,7 @@ export const nycSchoolZones = tool({
         zones = zone ? [zone] : [];
       }
       // If search term, borough, or district provided, use search
-      else if (searchTerm || borough || district) {
+      else if (searchTerm || district) {
         zones = await searchNYCSchoolZones({
           searchTerm,
           borough: borough?.toUpperCase(),
@@ -85,7 +84,7 @@ export const nycSchoolZones = tool({
           limit,
         });
       }
-      // If specific borough requested
+      // If only borough requested without search term or district
       else if (borough) {
         zones = await getNYCSchoolZonesByBorough({
           borough: borough.toUpperCase(),
@@ -109,7 +108,7 @@ export const nycSchoolZones = tool({
       // Enrich zones with GeoJSON data if requested
       const enrichedZones = [];
       for (const zone of zones) {
-        let enrichedZone = { ...zone };
+        const enrichedZone = { ...zone };
 
         if (includeGeometry && zone.geojsonDataId) {
           try {

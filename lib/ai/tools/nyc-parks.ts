@@ -1,17 +1,11 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import {
-  getAllNYCParks,
-  getNYCParksByBorough,
-  searchNYCParks,
-  getNYCParkById,
   getNYCParksWithGeoJSON,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import {
-  parksResponseSchema,
   type ParksResponse,
-  formatParkInfo,
   getBoroughDisplayName,
 } from '@/lib/schemas';
 

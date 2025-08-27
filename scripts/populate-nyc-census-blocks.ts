@@ -37,8 +37,8 @@ const safeParseInt = (value: any): number | null => {
   if (value === null || value === undefined || value === '' || value === '-999999999') {
     return null;
   }
-  const parsed = parseInt(String(value), 10);
-  return isNaN(parsed) ? null : parsed;
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? null : parsed;
 };
 
 // Helper function to safely parse decimals
@@ -46,8 +46,8 @@ const safeParseDecimal = (value: any): string | null => {
   if (value === null || value === undefined || value === '' || value === '-999999999') {
     return null;
   }
-  const parsed = parseFloat(String(value));
-  return isNaN(parsed) ? null : parsed.toString();
+  const parsed = Number.parseFloat(String(value));
+  return Number.isNaN(parsed) ? null : parsed.toString();
 };
 
 // Helper function to calculate unemployment rate

@@ -18,7 +18,7 @@ interface WebSearchData {
 export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
   if (webSearchData.error) {
     return (
-      <div className="flex flex-col gap-4 rounded-2xl p-4 bg-red-50 border border-red-200 max-w-[600px]">
+      <div className="flex flex-col gap-4 rounded-2xl p-4 bg-red-50 border border-red-200 max-w-screen-toast-mobile">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded-full bg-red-100 flex items-center justify-center">
             <span className="text-red-600 text-sm">!</span>
@@ -32,7 +32,7 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
 
   if (!webSearchData.results || webSearchData.results.length === 0) {
     return (
-      <div className="flex flex-col gap-4 rounded-2xl p-4 bg-gray-50 border border-gray-200 max-w-[600px]">
+      <div className="flex flex-col gap-4 rounded-2xl p-4 bg-gray-50 border border-gray-200 max-w-screen-toast-mobile">
         <div className="flex items-center gap-2">
           <div className="size-6 rounded-full bg-gray-100 flex items-center justify-center">
             <span className="text-gray-600 text-sm">?</span>
@@ -47,7 +47,7 @@ export function WebSearch({ webSearchData }: { webSearchData: WebSearchData }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-blue-50 border border-blue-200 max-w-[600px]">
+    <div className="flex flex-col gap-4 rounded-2xl p-4 bg-blue-50 border border-blue-200 max-w-screen-toast-mobile">
       <div className="flex items-center gap-2">
         <div className="size-6 rounded-full bg-blue-100 flex items-center justify-center">
           <span className="text-blue-600 text-sm">🔍</span>

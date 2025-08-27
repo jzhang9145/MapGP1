@@ -29,7 +29,7 @@ async function fetchRealCensusBoundaries() {
 
     const url = `${baseUrl}?${params}`;
     
-    console.log('📡 Requesting data from:', url.substring(0, 100) + '...');
+    console.log('📡 Requesting data from:', `${url.substring(0, 100)}...`);
     
     const response = await fetch(url);
     
@@ -40,7 +40,7 @@ async function fetchRealCensusBoundaries() {
     const data = await response.json();
     
     console.log('✅ Successfully fetched census tract data');
-    console.log('🔍 Raw API response:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
+    console.log('🔍 Raw API response:', `${JSON.stringify(data, null, 2).substring(0, 500)}...`);
     console.log(`📊 Found ${data.features?.length || 0} census tracts for Brooklyn`);
     
     if (!data.features || data.features.length === 0) {

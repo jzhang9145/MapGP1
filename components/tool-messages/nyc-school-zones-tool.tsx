@@ -74,7 +74,7 @@ export const NYCSchoolZonesTool = ({
                   <div className="flex gap-4 text-xs text-purple-600">
                     <span>Borough: {getBoroughName(zone.borough)}</span>
                     {zone.shapeArea && (
-                      <span>Area: {parseFloat(zone.shapeArea).toLocaleString()} sq ft</span>
+                      <span>Area: {Number.parseFloat(zone.shapeArea).toLocaleString()} sq ft</span>
                     )}
                   </div>
                   

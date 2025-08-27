@@ -186,7 +186,10 @@ async function fixCensusGeometry() {
     for (const tractInfo of REAL_BROOKLYN_CENSUS_TRACTS) {
       try {
         // Fetch real demographic data for this tract
-        let population = null, income = null, households = null, occupied = null;
+        let population = null;
+        let income = null;
+        let households = null;
+        let occupied = null;
         
         if (CENSUS_API_KEY && CENSUS_API_KEY !== 'YOUR_API_KEY_HERE') {
           const dataUrl = `https://api.census.gov/data/2023/acs/acs5?get=B01003_001E,B19013_001E,B25002_001E,B25002_002E&for=tract:${tractInfo.tract}&in=state:36%20county:047&key=${CENSUS_API_KEY}`;
@@ -196,10 +199,10 @@ async function fixCensusGeometry() {
             const data = await response.json();
             if (data.length > 1) {
               const row = data[1];
-              population = parseInt(row[0]) || null;
-              income = parseInt(row[1]) || null;
-              households = parseInt(row[2]) || null;
-              occupied = parseInt(row[3]) || null;
+              population = Number.parseInt(row[0]) || null;
+              income = Number.parseInt(row[1]) || null;
+              households = Number.parseInt(row[2]) || null;
+              occupied = Number.parseInt(row[3]) || null;
             }
           }
         }
@@ -248,7 +251,7 @@ async function fixCensusGeometry() {
             "medianHouseholdIncome", borough, "geojsonDataId"
           )
           VALUES (
-            ${tractInfo.geoid + '000'}, '36', '047', ${tractInfo.tract}, '000',
+            ${`${tractInfo.geoid}000`}, '36', '047', ${tractInfo.tract}, '000',
             ${population}, ${households}, ${occupied},
             ${income}, 'Brooklyn', ${geoResult[0].id}
           )

@@ -74,7 +74,7 @@ export const SpatialAnalysisTool = ({
     return (
       <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
         <div className="flex items-start gap-3">
-          <div className="size-6 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="size-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
             <span className="text-white text-sm">🗺️</span>
           </div>
           <div className="flex-1 min-w-0">
@@ -129,11 +129,9 @@ export const SpatialAnalysisTool = ({
                         )}
                         
                         {primaryLayer === 'neighborhoods' && (
-                          <>
-                            {result.borough && (
+                          result.borough && (
                               <div>📍 {result.borough}</div>
-                            )}
-                          </>
+                            )
                         )}
                         
                         {primaryLayer === 'schoolZones' && (

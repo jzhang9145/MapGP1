@@ -51,7 +51,7 @@ export const NYCParksTool = ({
     return (
       <div className="p-4 bg-green-50 rounded-lg border border-green-200">
         <div className="flex items-start gap-3">
-          <div className="size-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <div className="size-6 rounded-full bg-green-500 flex items-center justify-center shrink-0 mt-0.5">
             <span className="text-white text-sm">🏞️</span>
           </div>
           <div className="flex-1 min-w-0">

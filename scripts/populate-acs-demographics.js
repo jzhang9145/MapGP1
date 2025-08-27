@@ -105,7 +105,7 @@ function parseACSRow(headers, row) {
       if (value !== null && value !== '-' && value !== '' && value !== undefined) {
         const parsed = Number(value);
         // Only accept positive numbers for demographic data (some ACS values can be negative for margins of error)
-        if (!isNaN(parsed) && parsed >= 0) {
+        if (!Number.isNaN(parsed) && parsed >= 0) {
           numValue = parsed;
         }
       }
@@ -122,12 +122,12 @@ function parseACSRow(headers, row) {
   // Calculate derived fields - only if we have valid positive numbers
   if (parsed.laborForce && parsed.unemployed && parsed.laborForce > 0) {
     const rate = (parsed.unemployed / parsed.laborForce) * 100;
-    parsed.unemploymentRate = rate >= 0 ? parseFloat(rate.toFixed(2)) : null;
+    parsed.unemploymentRate = rate >= 0 ? Number.parseFloat(rate.toFixed(2)) : null;
   }
   
   if (parsed.totalEducationPop && parsed.bachelorsOrHigher && parsed.totalEducationPop > 0) {
     const rate = (parsed.bachelorsOrHigher / parsed.totalEducationPop) * 100;
-    parsed.educationRate = rate >= 0 ? parseFloat(rate.toFixed(2)) : null;
+    parsed.educationRate = rate >= 0 ? Number.parseFloat(rate.toFixed(2)) : null;
   }
   
   // Create GEOID (11 digits: state + county + tract)

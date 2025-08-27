@@ -35,9 +35,7 @@ import {
   area,
   geojsonData,
   nycNeighborhoods,
-  type NYCNeighborhood,
   plutoLots,
-  type PlutoLot,
   nycSchoolZones,
   type NYCSchoolZone,
   nycParks,
@@ -45,7 +43,6 @@ import {
   nycCensusBlocks,
   type NYCCensusBlock,
   nycMapPLUTO,
-  type NYCMapPLUTO,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -1312,7 +1309,7 @@ export async function getPlutoLotsByArea({
 
     // For now, we'll use a bounding box approach since we don't have spatial queries set up
     // In a production environment, you'd want to use PostGIS for proper spatial queries
-    let lots = await getAllPlutoLots({ limit: 1000 }); // Get more lots to filter
+    const lots = await getAllPlutoLots({ limit: 1000 }); // Get more lots to filter
 
     // Filter lots that are within the area's bounding box
     // This is a simplified approach - for precise spatial queries, use PostGIS

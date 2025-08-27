@@ -35,16 +35,16 @@ const safeParseInt = (value) => {
   if (value === null || value === undefined || value === '' || value === '-999999999') {
     return null;
   }
-  const parsed = parseInt(String(value), 10);
-  return isNaN(parsed) ? null : parsed;
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? null : parsed;
 };
 
 const safeParseDecimal = (value) => {
   if (value === null || value === undefined || value === '' || value === '-999999999') {
     return null;
   }
-  const parsed = parseFloat(String(value));
-  return isNaN(parsed) ? null : parsed.toString();
+  const parsed = Number.parseFloat(String(value));
+  return Number.isNaN(parsed) ? null : parsed.toString();
 };
 
 const calculateUnemploymentRate = (unemployed, laborForce) => {
@@ -55,7 +55,7 @@ const calculateUnemploymentRate = (unemployed, laborForce) => {
 
 // Create sample boundaries for census tracts (simplified rectangles across Brooklyn)
 function createSampleGeometry(tractCode) {
-  const tractNum = parseInt(tractCode);
+  const tractNum = Number.parseInt(tractCode);
   const baseY = 40.6; // Base latitude for Brooklyn
   const baseX = -74.0; // Base longitude for Brooklyn
   
@@ -89,7 +89,7 @@ async function fetchCensusData() {
   // Fetch demographic data from ACS API for census tracts
   const dataUrl = `https://api.census.gov/data/${CENSUS_YEAR}/acs/acs5?get=${ACS_VARIABLES}&for=tract:*&in=state:${NY_STATE_FIPS}%20county:${KINGS_COUNTY_FIPS}&key=${CENSUS_API_KEY}`;
   
-  console.log('🔗 API URL:', dataUrl.substring(0, 100) + '...');
+  console.log('🔗 API URL:', `${dataUrl.substring(0, 100)}...`);
   
   try {
     console.log('📡 Fetching demographic data...');

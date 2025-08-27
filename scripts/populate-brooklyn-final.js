@@ -67,23 +67,25 @@ async function populateBrooklynCensus() {
         const tract = row[headers.indexOf('tract')];
         const geoid = `${state}${county}${tract}000`;
         
-        const population = parseInt(row[headers.indexOf('B01003_001E')]) || null;
-        const income = parseInt(row[headers.indexOf('B19013_001E')]) || null;
-        const households = parseInt(row[headers.indexOf('B25002_001E')]) || null;
-        const occupied = parseInt(row[headers.indexOf('B25002_002E')]) || null;
+        const population = Number.parseInt(row[headers.indexOf('B01003_001E')]) || null;
+        const income = Number.parseInt(row[headers.indexOf('B19013_001E')]) || null;
+        const households = Number.parseInt(row[headers.indexOf('B25002_001E')]) || null;
+        const occupied = Number.parseInt(row[headers.indexOf('B25002_002E')]) || null;
         
         // Skip if no population data
         if (!population) continue;
         
         // Create geometry based on tract number
-        const tractNum = parseInt(tract);
+        const tractNum = Number.parseInt(tract);
         const gridSize = 20; // 20x20 grid
         const row_idx = Math.floor(tractNum / 10000) % gridSize;
         const col_idx = Math.floor((tractNum % 10000) / 100) % gridSize;
         
         // Brooklyn approximate bounds
-        const minLat = 40.57, maxLat = 40.74;
-        const minLng = -74.05, maxLng = -73.83;
+        const minLat = 40.57;
+        const maxLat = 40.74;
+        const minLng = -74.05;
+        const maxLng = -73.83;
         
         const cellHeight = (maxLat - minLat) / gridSize;
         const cellWidth = (maxLng - minLng) / gridSize;
